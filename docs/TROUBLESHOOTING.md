@@ -120,9 +120,46 @@ Or temporarily:
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-## Git clone auth fails
+## Git clone auth fails / no browser SSO
 
-Use HTTPS from WSL; authenticate via **Git Credential Manager on Windows** (browser SSO). No SSH required.
+WSL ships its own `git`. It does **not** use Windows Git Credential Manager unless you wire it up. Symptom: `git clone https://...` hangs, fails with 401/403, or never opens a browser.
+
+### Fix (recommended)
+
+1. On **Windows**, install [Git for Windows](https://git-scm.com/download/win) and choose **Git Credential Manager** as the credential helper.
+2. In **WSL**:
+
+```bash
+cd ~/devbox && git pull
+devbox setup git
+git config --global --get credential.helper   # should point at .../git-credential-manager.exe
+```
+
+3. Clone from `~/code`:
+
+```bash
+cd ~/code
+git clone https://github.yourcompany.com/team/your-app.git
+```
+
+A Windows dialog or browser tab should open for SSO.
+
+### Verify GCM is reachable from WSL
+
+```bash
+"/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe" --version
+```
+
+### Still no prompt?
+
+- **Stale credentials:** Windows → Credential Manager → remove entries for `git:https://...` or your host, then clone again.
+- **SSH URL:** GCM only works for **HTTPS** remotes (`https://...`), not `git@...`.
+- **GitHub Enterprise:** use the full `https://github.company.com/...` clone URL.
+- **Azure DevOps:** `devbox setup git` sets `credential.https://dev.azure.com.useHttpPath true`.
+
+### Workaround
+
+Clone once from **Windows** (PowerShell in a folder on `C:\`), or use SSH keys in WSL — devbox standard path is HTTPS + GCM.
 
 ## Docker
 

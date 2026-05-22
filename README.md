@@ -90,6 +90,12 @@ curl -fsSL https://nodejs.org/dist/index.json | head -c 80 && echo " TLS OK"
 
 ### 6. Clone your first team repo
 
+If `git clone https://...` does not open browser SSO from WSL, wire Git to **Windows Git Credential Manager**:
+
+```bash
+devbox setup git   # once; requires Git for Windows installed on the host
+```
+
 devbox is **not** required inside the repo.
 
 ```bash

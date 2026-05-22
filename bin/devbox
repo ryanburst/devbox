@@ -60,6 +60,7 @@ Usage:
   devbox                     Interactive menu (TTY only)
   devbox setup               Guided wizard (TLS, toolchain, shell)
   devbox setup tls           Corporate CA / Zscaler only
+  devbox setup git           Use Windows Git Credential Manager from WSL (HTTPS SSO)
   devbox setup -y            Wizard with defaults (non-interactive)
   devbox tls                 Alias for: devbox setup tls
   devbox reset [--full] [-y] Undo install.sh / setup (see devbox reset --help)
@@ -263,6 +264,16 @@ cmd_doctor() {
   else
     echo "  workspace: missing — mkdir -p $CODE_DIR"
   fi
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    local gcm_status
+    gcm_status="$(devbox_git_gcm_status 2>/dev/null || true)"
+    if [[ "$gcm_status" == "ok" ]]; then
+      echo "  git credential (Windows GCM): ok"
+    else
+      echo "  git credential (Windows GCM): $gcm_status"
+      echo "  fix: devbox setup git  (install Git for Windows with GCM first)"
+    fi
+  fi
   devbox_load_env_local
   if devbox_test_https; then
     echo "  HTTPS (nodejs.org): ok"
@@ -359,6 +370,16 @@ cmd_reset() {
   exec bash "$DEVBOX_ROOT/scripts/reset-devbox.sh" "$@"
 }
 
+cmd_setup_git() {
+  if devbox_configure_git_gcm; then
+    echo "Git HTTPS will use Windows Git Credential Manager (browser SSO)."
+    echo "Test: cd ~/code && git clone https://github.com/<org>/<repo>.git"
+    echo "If no browser opens, clear stale creds in Windows Credential Manager and retry."
+  else
+    die "could not configure Git GCM — install Git for Windows (GCM), then re-run"
+  fi
+}
+
 cmd_setup() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -370,12 +391,16 @@ cmd_setup() {
         devbox_setup_tls_interactive
         return 0
         ;;
+      git)
+        cmd_setup_git
+        return 0
+        ;;
       -h | --help)
-        echo "usage: devbox setup [-y] [tls]"
+        echo "usage: devbox setup [-y] [tls|git]"
         return 0
         ;;
       *)
-        die "unknown setup option: $1 (try: devbox setup tls)"
+        die "unknown setup option: $1 (try: devbox setup tls | devbox setup git)"
         ;;
     esac
   done
@@ -384,6 +409,8 @@ cmd_setup() {
 
 # shellcheck source=../scripts/lib/corporate-ca.sh
 source "$DEVBOX_ROOT/scripts/lib/corporate-ca.sh"
+# shellcheck source=../scripts/lib/git-gcm.sh
+source "$DEVBOX_ROOT/scripts/lib/git-gcm.sh"
 # shellcheck source=../scripts/lib/interactive.sh
 source "$DEVBOX_ROOT/scripts/lib/interactive.sh"
 
