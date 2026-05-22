@@ -4,9 +4,9 @@
 
 Corporate TLS inspection (common with Zscaler). The root CA is not in WSL’s trust store yet.
 
-1. Follow [CORPORATE-TLS.md](CORPORATE-TLS.md)
+1. Run `bash ~/devbox/bin/devbox setup tls` (or `devbox setup tls` if on PATH)
 2. Verify: `curl -fsSL https://nodejs.org/dist/index.json | head -c 80`
-3. Re-run `bash install.sh`
+3. Re-run `devbox setup` or `bash ~/devbox/install.sh`
 
 ## `can't get remote versions file` (fnm)
 
@@ -17,7 +17,7 @@ export SSL_CERT_FILE=$HOME/devbox/config/zscaler-root.cer   # if you have the fi
 fnm ls-remote | head
 ```
 
-Fix CA in WSL, then `bash install.sh`.
+Fix CA in WSL: `devbox setup tls`, then `devbox setup` or `bash install.sh`.
 
 ## `pnpm install` very slow
 

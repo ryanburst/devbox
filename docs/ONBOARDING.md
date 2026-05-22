@@ -1,6 +1,6 @@
 # New developer onboarding
 
-Checklist to go from a corporate Windows laptop to working on any team repo. **You only clone devbox once**; other projects use standard `git` + `pnpm`.
+Checklist to go from a corporate Windows laptop to working on any team repo. **Clone devbox once**; other projects use standard `git` + `pnpm` only.
 
 ## Prerequisites (Windows — usually pre-installed)
 
@@ -26,50 +26,48 @@ wsl
 
 Create your Linux username when prompted.
 
-## Phase 2 — Base packages (WSL Ubuntu)
+## Phase 2 — Clone devbox and run setup (WSL)
+
+Optional but recommended before the wizard (OS updates only — `install.sh` installs build tools):
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git ca-certificates unzip build-essential
 ```
 
-## Phase 3 — Clone devbox (WSL)
+Clone and start the **interactive setup wizard** (handles TLS, `apt` packages, fnm, Node, pnpm, turbo):
 
 ```bash
 git clone https://github.com/ryanburst/devbox.git ~/devbox
 cd ~/devbox
-bash install.sh   # links devbox CLI; may warn on TLS until next step
+bash bin/devbox setup
 ```
 
-## Phase 4 — Guided setup (TLS + toolchain)
+Use `bash bin/devbox setup` the first time — the `devbox` command is added to your PATH during setup.
 
-Symptom if skipped: `curl: unable to get local issuer certificate`
+The wizard will:
 
-```bash
-devbox setup
-```
+1. Test HTTPS (`nodejs.org`) and offer **Corporate TLS / Zscaler** if it fails (export from Windows, cert file path, or skip)
+2. Run **`install.sh`** (sudo for system packages and CA trust)
+3. Optionally add a **`~/.bashrc`** block (`PATH`, fnm, `env.local`)
+4. Run **`devbox doctor`**
 
-The wizard walks through:
-
-1. Corporate TLS / Zscaler (optional if HTTPS already works)
-2. `install.sh` (fnm, Node, pnpm, turbo)
-3. Optional `~/.bashrc` configuration
-4. `devbox doctor`
-
-TLS only:
-
-```bash
-devbox setup tls
-```
-
-Manual alternatives: [CORPORATE-TLS.md](CORPORATE-TLS.md).
+Then reload your shell:
 
 ```bash
 exec bash
 devbox doctor
 ```
 
-## Phase 5 — First application repo (no devbox required)
+### TLS problems only
+
+```bash
+cd ~/devbox
+bash bin/devbox setup tls
+```
+
+If the wizard cannot reach Windows (no WSL interop), see [CORPORATE-TLS.md](CORPORATE-TLS.md) for manual export on the host.
+
+## Phase 3 — First application repo (no devbox required)
 
 ```bash
 mkdir -p ~/code
@@ -102,6 +100,7 @@ pnpm dev
 devbox list
 devbox repo your-app          # cd + optional profile env
 devbox doctor                 # when something breaks
+devbox                          # interactive menu
 ```
 
 ## Common mistakes
@@ -110,12 +109,13 @@ devbox doctor                 # when something breaks
 |---------|-----|
 | Clone repos under `C:\` or `/mnt/c/...` | Use `~/code` in WSL |
 | Run `pnpm` in PowerShell | Use WSL bash only |
-| Skip corporate CA before `install.sh` | Run sync or set `DEVBOX_CA_CERT_FILE`, then re-run `install.sh` |
+| Run `install.sh` before TLS on Zscaler networks | Use `devbox setup` or `devbox setup tls` first |
+| Run `devbox` before setup completes | Use `bash ~/devbox/bin/devbox setup` |
 | Expect devbox inside every repo | Only clone devbox once on the machine |
 
 ## Getting help
 
-- `devbox doctor` — toolchain and paths
+- `devbox doctor` — toolchain, paths, HTTPS
 - [ARCHITECTURE.md](ARCHITECTURE.md) — design intent
 - [SECURITY.md](SECURITY.md) — security review summary
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — TLS, fnm, performance

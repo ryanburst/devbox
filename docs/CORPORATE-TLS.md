@@ -9,11 +9,16 @@ WSL Ubuntu does **not** automatically trust certificates installed on Windows. U
 
 ## Recommended order (interactive)
 
+From your devbox clone (use `bin/devbox` until `devbox` is on PATH):
+
 ```bash
 cd ~/devbox
-devbox setup tls    # guided: Zscaler export, cert file, or skip
-devbox setup        # full wizard including install.sh
+bash bin/devbox setup       # TLS + install.sh + optional shell (preferred)
+# or TLS only:
+bash bin/devbox setup tls
 ```
+
+After setup: `devbox setup tls` and `devbox doctor` work from any directory.
 
 Or manually:
 

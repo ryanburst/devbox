@@ -41,21 +41,22 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 Full steps: **[docs/ONBOARDING.md](docs/ONBOARDING.md)**
 
-1. **Windows:** `wsl --install -d Ubuntu` → restart → `wsl`
-2. **WSL:** `sudo apt update` and install base packages (see onboarding doc)
-3. **TLS (if needed):** [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md) — **before** `install.sh` if `curl` fails HTTPS
-4. **Bootstrap:**
+1. **Windows:** `wsl --install -d Ubuntu` → restart → `wsl` (create Linux user)
+2. **WSL — clone devbox and run the setup wizard** (TLS, packages, Node, pnpm — one flow):
 
 ```bash
 git clone https://github.com/ryanburst/devbox.git ~/devbox
 cd ~/devbox
-export DEVBOX_PATCH_SHELL=1   # optional: add devbox to ~/.bashrc
-bash install.sh
+bash bin/devbox setup
 exec bash
 devbox doctor
 ```
 
-5. **Any project** (devbox not required in the repo):
+The wizard handles corporate TLS / Zscaler when HTTPS fails, then runs `install.sh` (includes `apt` packages). Use `bash bin/devbox setup` before `devbox` is on your PATH.
+
+TLS only: `bash bin/devbox setup tls` — manual fallback: [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md)
+
+3. **Any project** (devbox not required in the repo):
 
 ```bash
 cd ~/code
@@ -65,27 +66,14 @@ pnpm install
 pnpm dev
 ```
 
-## Corporate TLS (Zscaler)
+## devbox CLI
 
-If `curl` or `fnm` fail with certificate errors:
-
-```bash
-devbox setup tls
-```
-
-The wizard can export from Windows (Zscaler), use a cert file path, or copy from the host. Then run `devbox setup` or `bash install.sh`.
-
-Manual steps: [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md)
-
-## Optional: devbox CLI
-
-Convenience only — **not** needed for application builds.
-
-**New machine:** run the guided wizard (handles TLS / Zscaler, `install.sh`, shell):
+**Not** required for application builds. Use it for machine setup and troubleshooting.
 
 ```bash
-devbox setup
-# or: devbox          # interactive menu when run in a terminal
+devbox              # interactive menu (TTY)
+devbox setup        # wizard: TLS → install.sh → optional ~/.bashrc
+devbox setup tls    # corporate CA / Zscaler only
 ```
 
 | Command | Purpose |

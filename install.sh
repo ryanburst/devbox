@@ -125,7 +125,7 @@ install_node_stack() {
 configure_corporate_ca() {
   if [[ -z "${DEVBOX_CA_CERT_FILE:-}" ]]; then
     if grep -qi microsoft /proc/version 2>/dev/null; then
-      warn "DEVBOX_CA_CERT_FILE not set — run: devbox setup tls"
+      warn "DEVBOX_CA_CERT_FILE not set — run: bash bin/devbox setup tls"
     fi
     return 0
   fi

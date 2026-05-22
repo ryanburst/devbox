@@ -82,11 +82,13 @@ Docker remains **optional** for infrastructure only (Postgres, Redis, etc.) via 
 
 Zscaler installs roots on **Windows**. WSL has a **separate** trust store — you must copy/install the CA into Ubuntu **before** `fnm install` / `npm` downloads succeed.
 
-Paths:
+Preferred: **`bash bin/devbox setup`** (wizard runs TLS before `install.sh`) or **`bash bin/devbox setup tls`**.
 
-1. **WSL + interop:** `bash scripts/sync-zscaler-ca.sh` (one-time; calls Windows PowerShell on the host).
+Other paths:
+
+1. **WSL + interop:** `bash scripts/sync-zscaler-ca.sh` (called from the TLS wizard).
 2. **Manual:** IT provides a `.cer` / `.pem`; set `DEVBOX_CA_CERT_FILE` in `config/env.local`.
-3. **Host-only export:** Run `scripts/windows/Export-ZscalerCa.ps1` in Windows PowerShell, copy the file into WSL `config/`.
+3. **Host-only export:** Run `scripts/windows/Export-ZscalerCa.ps1` on Windows, copy into WSL `config/`.
 
 See [CORPORATE-TLS.md](CORPORATE-TLS.md).
 
