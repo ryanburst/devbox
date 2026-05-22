@@ -29,7 +29,7 @@ devbox_configure_git_gcm() {
     printf 'devbox: Git Credential Manager not found under /mnt/c/Program Files/Git/\n' >&2
     printf 'devbox: install Git for Windows and choose the GCM credential helper\n' >&2
     return 1
-  fi
+  }
   current="$(git config --global --get credential.helper 2>/dev/null || true)"
   if [[ "$current" == "$gcm" ]]; then
     return 0
