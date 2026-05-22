@@ -131,13 +131,39 @@ pnpm -v
 
 ### Corporate proxy / TLS (optional)
 
-If installs fail behind SSL inspection, install your organization root CA — do not disable TLS verification:
+If installs fail behind SSL inspection, install your organization root CA — do not disable TLS verification.
+
+#### Zscaler (automated from WSL)
+
+Requires **Zscaler Client Connector** installed on Windows (certificates present in Windows stores).
+
+*Run inside WSL from your devbox clone:*
+
+```bash
+bash scripts/sync-zscaler-ca.sh
+bash install.sh
+```
+
+This script:
+
+1. Runs `scripts/windows/Export-ZscalerCa.ps1` on Windows
+2. Copies the cert to `config/zscaler-root.cer` (gitignored)
+3. Writes `DEVBOX_CA_CERT_FILE` in `config/env.local`
+
+List certs without exporting:
+
+```powershell
+# Windows PowerShell
+.\scripts\windows\Export-ZscalerCa.ps1 -ListOnly
+```
+
+#### Manual / other vendors
 
 ```bash
 cp config/env.example config/env.local
 chmod 600 config/env.local
 # Set DEVBOX_CA_CERT_FILE=/path/to/company-root-ca.pem
-# Re-run: bash install.sh
+bash install.sh
 ```
 
 ## devbox CLI

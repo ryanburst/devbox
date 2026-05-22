@@ -1,4 +1,6 @@
 config/env.local
+config/zscaler-root.cer
+config/zscaler-root.bundle.cer
 .DS_Store
 *.swp
 *~

@@ -28,6 +28,12 @@ Summary for corporate security review.
 - `github.com` — fnm release artifact
 - `registry.npmjs.org` — global `pnpm`, `turbo`, Node via fnm
 
+## Zscaler automation
+
+From WSL, `scripts/sync-zscaler-ca.sh` invokes `scripts/windows/Export-ZscalerCa.ps1` to read Zscaler CAs from Windows certificate stores (`LocalMachine` / `CurrentUser` **Root** and **CA**), export the best match, and configure `config/env.local`.
+
+Prerequisites: Zscaler client installed on Windows; WSL interop (`powershell.exe`, `cmd.exe`) enabled.
+
 ## Recommendations for enterprises
 
 1. Mirror fnm/npm artifacts internally and point installs at mirrors.
