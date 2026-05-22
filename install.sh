@@ -30,7 +30,7 @@ install_apt_minimal() {
   fi
   log "installing curl for devbox setup (sudo may prompt)"
   sudo apt-get update -qq
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y curl ca-certificates
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y curl ca-certificates openssl
 }
 
 install_devbox_cli() {

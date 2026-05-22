@@ -5,6 +5,7 @@ agent-chat-context.md
 config/env.local
 config/zscaler-root.cer
 config/zscaler-root.bundle.cer
+config/corporate-ca.pem
 .DS_Store
 *.swp
 *~

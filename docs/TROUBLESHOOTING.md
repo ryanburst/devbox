@@ -1,5 +1,28 @@
 # Troubleshooting
 
+## `curl: (77) error adding trust anchors` / `0 added, 0 removed`
+
+Windows `Export-Certificate` often produced **DER** `.cer` files. curl and `update-ca-certificates` need **PEM**.
+
+```bash
+cd ~/devbox
+git pull
+# Re-export or convert:
+devbox setup tls
+# Or manually:
+openssl x509 -in config/zscaler-root.cer -inform DER \
+  -out config/corporate-ca.pem -outform PEM
+export DEVBOX_CA_CERT_FILE=$HOME/devbox/config/corporate-ca.pem
+devbox setup tls
+```
+
+Verify:
+
+```bash
+openssl x509 -in ~/devbox/config/corporate-ca.pem -noout -subject
+curl -fsSL https://nodejs.org/dist/index.json | head -c 80
+```
+
 ## `curl: unable to get local issuer certificate`
 
 Corporate TLS inspection (common with Zscaler). The root CA is not in WSL’s trust store yet.

@@ -96,8 +96,9 @@ devbox_setup_tls_interactive() {
       read -r cert_path </dev/tty || return 1
       cert_path="${cert_path/#\~/$HOME}"
       [[ -f "$cert_path" ]] || die "file not found: $cert_path"
-      devbox_write_ca_to_env_local "$cert_path" || die "could not update config/env.local"
-      printf '  Saved DEVBOX_CA_CERT_FILE to config/env.local\n'
+      devbox_prepare_corporate_ca "$cert_path" >/dev/null \
+        || die "invalid cert or openssl missing — install: sudo apt install -y openssl"
+      printf '  Normalized CA to config/corporate-ca.pem\n'
       ;;
     3)
       win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r\n' || true)"
@@ -107,9 +108,9 @@ devbox_setup_tls_interactive() {
       mkdir -p "$DEVBOX_ROOT/config"
       cp -f "$win_cert" "$DEVBOX_ROOT/config/zscaler-root.cer"
       chmod 600 "$DEVBOX_ROOT/config/zscaler-root.cer"
-      devbox_write_ca_to_env_local "$DEVBOX_ROOT/config/zscaler-root.cer" \
-        || die "could not update config/env.local"
-      printf '  Copied cert to config/zscaler-root.cer\n'
+      devbox_prepare_corporate_ca "$DEVBOX_ROOT/config/zscaler-root.cer" >/dev/null \
+        || die "could not convert cert to PEM — install openssl"
+      printf '  Copied cert and wrote config/corporate-ca.pem\n'
       ;;
     4 | *)
       warn "skipped TLS setup — install/fnm may fail until CA is configured"

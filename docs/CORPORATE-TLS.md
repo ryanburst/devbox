@@ -58,7 +58,7 @@ cd C:\Users\<You>\devbox
 
 ```bash
 cp /mnt/c/Users/<You>/.devbox/certs/zscaler-root.cer ~/devbox/config/zscaler-root.cer
-devbox setup tls
+devbox setup tls   # converts to config/corporate-ca.pem and installs trust
 ```
 
 ## Method 3 — IT-provided certificate
@@ -73,11 +73,13 @@ devbox setup tls
 
 ## What the toolchain install does
 
-When `DEVBOX_CA_CERT_FILE` is set, `scripts/install-toolchain.sh`:
+When `DEVBOX_CA_CERT_FILE` is set, devbox normalizes the file to **PEM** (`config/corporate-ca.pem`), then `scripts/install-toolchain.sh`:
 
-1. Copies the cert to `/usr/local/share/ca-certificates/`
+1. Copies the PEM to `/usr/local/share/ca-certificates/`
 2. Runs `update-ca-certificates`
-3. Sets `SSL_CERT_FILE` and `NODE_EXTRA_CA_CERTS` for fnm, curl, and npm
+3. Sets `SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`, and `CURL_CA_BUNDLE` for fnm, curl, and npm
+
+Windows exports are often DER; raw `.cer` paths break curl with error **77** until converted.
 
 ## List Zscaler certs (no export)
 

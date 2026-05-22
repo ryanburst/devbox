@@ -36,7 +36,7 @@ install_apt_baseline() {
   log "installing system packages (sudo may prompt)"
   sudo apt-get update -qq
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    curl git ca-certificates unzip build-essential
+    curl git ca-certificates unzip build-essential openssl
 }
 
 verify_sha256() {

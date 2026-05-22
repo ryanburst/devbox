@@ -92,10 +92,18 @@ if (-not (Test-Path $outDir)) {
     New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 }
 
-# Export the best candidate (highest score = likely root)
+# Export the best candidate (highest score = likely root) as PEM for WSL/curl
 $primary = $sorted[0].Certificate
-Export-Certificate -Cert $primary -FilePath $OutputPath -Force | Out-Null
-Write-Host "Exported primary cert -> $OutputPath"
+$raw = $primary.RawData
+$b64 = [Convert]::ToBase64String($raw, [System.Base64FormattingOptions]::InsertLineBreaks)
+$pem = @(
+    '-----BEGIN CERTIFICATE-----'
+    $b64
+    '-----END CERTIFICATE-----'
+) -join [Environment]::NewLine
+Set-Content -Path $OutputPath -Value $pem -Encoding ascii -NoNewline
+Add-Content -Path $OutputPath -Value ([Environment]::NewLine) -Encoding ascii
+Write-Host "Exported primary cert (PEM) -> $OutputPath"
 
 # If multiple distinct Zscaler certs, also write a bundle for chained trust
 if ($sorted.Count -gt 1) {

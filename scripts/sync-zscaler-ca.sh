@@ -69,7 +69,11 @@ if [[ -f "$WIN_BUNDLE" ]]; then
   log "copied bundle to config/zscaler-root.bundle.cer"
 fi
 
-devbox_write_ca_to_env_local "$DEST_CERT" || die "could not update config/env.local"
+log "converting CA to PEM (Windows .cer is often DER)..."
+if ! devbox_prepare_corporate_ca "$DEST_CERT" >/dev/null; then
+  die "could not convert $DEST_CERT to PEM — install openssl: sudo apt install -y openssl"
+fi
+log "normalized CA: $(devbox_corporate_ca_pem_path)"
 log "updated $(devbox_env_local)"
 
 log "done — run: devbox setup tls   (after: bash install.sh)"
