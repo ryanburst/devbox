@@ -1,0 +1,4 @@
+config/env.local
+.DS_Store
+*.swp
+*~

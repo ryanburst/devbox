@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+# devbox — WSL2 workspace helper (profiles, doctor, repo entry).
+set -euo pipefail
+
+DEVBOX_ROOT="${DEVBOX_ROOT:-$(
+  d="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  printf '%s' "$d"
+)}"
+CODE_DIR="${DEVBOX_CODE_DIR:-$HOME/code}"
+PROFILES_DIR="$DEVBOX_ROOT/profiles"
+
+usage() {
+  cat <<'EOF'
+devbox — WSL2 development helper
+
+Usage:
+  devbox doctor              Verify Node, pnpm, paths, and WSL
+  devbox env [profile]       Print resolved environment for a profile
+  devbox repo <name>         Enter ~/code/<name> with profile + optional hooks
+  devbox list                List repos under ~/code
+  devbox help                Show this message
+
+Profiles:
+  ~/devbox/profiles/<name>.env   (shared)
+  ~/code/<repo>/.devbox/profile.env   (repo override)
+
+Per-repo hooks (optional):
+  ~/code/<repo>/.devbox/hooks.sh
+EOF
+}
+
+activate_fnm() {
+  export PATH="${HOME}/.local/share/fnm:${HOME}/.fnm:${PATH}"
+  if command -v fnm >/dev/null 2>&1; then
+    eval "$(fnm env --shell bash)"
+  fi
+}
+
+load_profile() {
+  local name="$1"
+  local f=""
+  if [[ -f "$PROFILES_DIR/${name}.env" ]]; then
+    f="$PROFILES_DIR/${name}.env"
+  elif [[ -f "$PROFILES_DIR/default.env" ]]; then
+    f="$PROFILES_DIR/default.env"
+  fi
+  if [[ -n "$f" ]]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$f"
+    set +a
+  fi
+}
+
+load_repo_profile() {
+  local repo_dir="$1"
+  local f="$repo_dir/.devbox/profile.env"
+  if [[ -f "$f" ]]; then
+    set -a
+    # shellcheck source=/dev/null
+    source "$f"
+    set +a
+  fi
+}
+
+apply_node_version() {
+  activate_fnm
+  if [[ -n "${NODE_VERSION:-}" ]] && command -v fnm >/dev/null 2>&1; then
+    fnm use "$NODE_VERSION" 2>/dev/null || fnm install "$NODE_VERSION" && fnm use "$NODE_VERSION"
+  fi
+}
+
+cmd_doctor() {
+  echo "devbox doctor"
+  echo "  DEVBOX_ROOT=$DEVBOX_ROOT"
+  echo "  CODE_DIR=$CODE_DIR"
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    echo "  WSL: yes"
+  else
+    echo "  WSL: no (expected on Windows via WSL2 Ubuntu)"
+  fi
+  activate_fnm
+  for cmd in node npm pnpm git; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+      echo "  $cmd: $($cmd --version 2>/dev/null | head -1)"
+    else
+      echo "  $cmd: MISSING — run: bash $DEVBOX_ROOT/install.sh"
+    fi
+  done
+  if command -v pnpm >/dev/null 2>&1; then
+    echo "  pnpm store: $(pnpm config get store-dir 2>/dev/null || echo unknown)"
+  fi
+  if [[ -d "$CODE_DIR" ]]; then
+    echo "  workspace: ok ($CODE_DIR)"
+  else
+    echo "  workspace: missing — mkdir -p $CODE_DIR"
+  fi
+  pwd_out="$(pwd 2>/dev/null || true)"
+  if [[ "$pwd_out" == /mnt/* ]]; then
+    echo "  warning: current directory is on Windows mount ($pwd_out) — use ~/code for speed"
+  fi
+}
+
+cmd_env() {
+  local profile="${1:-default}"
+  load_profile "$profile"
+  apply_node_version
+  echo "# profile: $profile"
+  env | grep -E '^(NODE_|PNPM_|DEVBOX_|ENV=|API_|FEATURE_)' | sort || true
+}
+
+cmd_list() {
+  if [[ ! -d "$CODE_DIR" ]]; then
+    echo "no workspace at $CODE_DIR"
+    exit 0
+  fi
+  local d base
+  for d in "$CODE_DIR"/*; do
+    [[ -d "$d" ]] || continue
+    base="$(basename "$d")"
+    [[ "$base" == .* ]] && continue
+    printf '%s\n' "$base"
+  done
+}
+
+cmd_repo() {
+  local name="${1:-}"
+  [[ -n "$name" ]] || die "usage: devbox repo <name>"
+  local repo_dir="$CODE_DIR/$name"
+  [[ -d "$repo_dir" ]] || die "repo not found: $repo_dir (clone into ~/code first)"
+
+  load_profile "$name"
+  load_repo_profile "$repo_dir"
+  apply_node_version
+
+  local hooks="$repo_dir/.devbox/hooks.sh"
+  if [[ -f "$hooks" ]]; then
+    # shellcheck source=/dev/null
+    source "$hooks"
+  fi
+
+  cd "$repo_dir"
+  echo "devbox: $repo_dir"
+  exec "${SHELL:-bash}" -l
+}
+
+die() { printf 'devbox: %s\n' "$*" >&2; exit 1; }
+
+main() {
+  local cmd="${1:-help}"
+  shift || true
+  case "$cmd" in
+    doctor) cmd_doctor ;;
+    env) cmd_env "${1:-default}" ;;
+    repo) cmd_repo "${1:-}" ;;
+    list) cmd_list ;;
+    help|-h|--help) usage ;;
+    *) usage; die "unknown command: $cmd" ;;
+  esac
+}
+
+main "$@"
