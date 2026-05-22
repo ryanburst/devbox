@@ -76,7 +76,9 @@ install_fnm() {
 
   zip_url="https://github.com/Schniz/fnm/releases/download/v${FNM_VERSION}/${asset}"
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' RETURN
+  # RETURN trap must be cleared before leaving the function — otherwise it runs
+  # again when main() returns and $tmp is out of scope (set -u: unbound variable).
+  trap 'rm -rf "$tmp"; trap - RETURN' RETURN
 
   log "installing fnm v${FNM_VERSION} (${asset})"
   curl -fsSL "$zip_url" -o "$tmp/fnm.zip"
@@ -89,6 +91,9 @@ install_fnm() {
   hash -r 2>/dev/null || true
   command -v fnm >/dev/null 2>&1 || die "fnm binary missing after extract"
   log "fnm installed to $FNM_INSTALL_DIR"
+
+  rm -rf "$tmp"
+  trap - RETURN
 }
 
 activate_fnm() {
@@ -105,6 +110,19 @@ validate_node_version() {
     || die "invalid DEVBOX_NODE_VERSION: $NODE_VERSION"
 }
 
+configure_npm() {
+  activate_fnm
+  command -v npm >/dev/null 2>&1 || return 0
+  # Node ships npm 10.x; suppress "npm 11 available" noise during bootstrap.
+  npm config set update-notifier false --location=user >/dev/null 2>&1 || true
+  npm config set fund false --location=user >/dev/null 2>&1 || true
+}
+
+npm_quiet() {
+  NPM_CONFIG_UPDATE_NOTIFIER=false NPM_CONFIG_FUND=false NPM_CONFIG_AUDIT=false \
+    npm "$@"
+}
+
 install_node_stack() {
   activate_fnm
   validate_node_version
@@ -112,8 +130,9 @@ install_node_stack() {
   fnm install "$NODE_VERSION"
   fnm use "$NODE_VERSION"
   fnm default "$NODE_VERSION"
+  configure_npm
   node -v
-  npm -v
+  printf '%s\n' "$(npm_quiet -v 2>/dev/null)"
 }
 
 configure_corporate_ca() {
@@ -132,7 +151,7 @@ install_global_tools() {
   activate_fnm
   devbox_export_ssl_certs
   log "installing pnpm@${PNPM_VERSION} and turbo@${TURBO_VERSION}"
-  npm install -g "pnpm@${PNPM_VERSION}" "turbo@${TURBO_VERSION}"
+  npm_quiet install -g --loglevel=error "pnpm@${PNPM_VERSION}" "turbo@${TURBO_VERSION}"
   pnpm -v
   turbo --version
 }
