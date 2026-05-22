@@ -2,11 +2,40 @@
 # devbox — WSL2 workspace helper (profiles, doctor, repo entry).
 set -euo pipefail
 
-DEVBOX_ROOT="${DEVBOX_ROOT:-$(
-  d="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-  printf '%s' "$d"
-)}"
-CODE_DIR="${DEVBOX_CODE_DIR:-$HOME/code}"
+die() { printf 'devbox: %s\n' "$*" >&2; exit 1; }
+warn() { printf 'devbox warning: %s\n' "$*" >&2; }
+
+_devbox_script_root() {
+  cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd
+}
+
+resolve_devbox_root() {
+  local default_root
+  default_root="$(_devbox_script_root)"
+  if [[ -n "${DEVBOX_ROOT:-}" && "${DEVBOX_ALLOW_OVERRIDE:-}" == "1" ]]; then
+    printf '%s' "$DEVBOX_ROOT"
+    return 0
+  fi
+  if [[ -n "${DEVBOX_ROOT:-}" && "$DEVBOX_ROOT" != "$default_root" ]]; then
+    die "DEVBOX_ROOT override ignored (set DEVBOX_ALLOW_OVERRIDE=1 to allow)"
+  fi
+  printf '%s' "$default_root"
+}
+
+resolve_code_dir() {
+  local default_dir="$HOME/code"
+  if [[ -n "${DEVBOX_CODE_DIR:-}" && "${DEVBOX_ALLOW_OVERRIDE:-}" == "1" ]]; then
+    printf '%s' "$DEVBOX_CODE_DIR"
+    return 0
+  fi
+  if [[ -n "${DEVBOX_CODE_DIR:-}" && "$DEVBOX_CODE_DIR" != "$default_dir" ]]; then
+    die "DEVBOX_CODE_DIR override ignored (set DEVBOX_ALLOW_OVERRIDE=1 to allow)"
+  fi
+  printf '%s' "$default_dir"
+}
+
+DEVBOX_ROOT="$(resolve_devbox_root)"
+CODE_DIR="$(resolve_code_dir)"
 PROFILES_DIR="$DEVBOX_ROOT/profiles"
 
 usage() {
@@ -14,18 +43,24 @@ usage() {
 devbox — WSL2 development helper
 
 Usage:
-  devbox doctor              Verify Node, pnpm, paths, and WSL
-  devbox env [profile]       Print resolved environment for a profile
-  devbox repo <name>         Enter ~/code/<name> with profile + optional hooks
+  devbox doctor              Verify Node, pnpm, paths, ownership, and WSL
+  devbox env [profile]       Print allowlisted environment variables
+  devbox repo <name> [--trust-hooks]
+                             Enter ~/code/<name> with profile env loaded
   devbox list                List repos under ~/code
   devbox help                Show this message
 
 Profiles:
-  ~/devbox/profiles/<name>.env   (shared)
+  ~/devbox/profiles/<name>.env        (shared)
   ~/code/<repo>/.devbox/profile.env   (repo override)
 
-Per-repo hooks (optional):
+Per-repo hooks (opt-in only):
   ~/code/<repo>/.devbox/hooks.sh
+  Run only with --trust-hooks or DEVBOX_TRUST_HOOKS=1
+
+Environment:
+  DEVBOX_TRUST_HOOKS=1       Allow sourcing .devbox/hooks.sh
+  DEVBOX_ALLOW_OVERRIDE=1    Allow DEVBOX_ROOT / DEVBOX_CODE_DIR overrides
 EOF
 }
 
@@ -34,6 +69,11 @@ activate_fnm() {
   if command -v fnm >/dev/null 2>&1; then
     eval "$(fnm env --shell bash)"
   fi
+}
+
+validate_node_version() {
+  local ver="${1:-}"
+  [[ "$ver" =~ ^[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9.]+)?$ ]] || die "invalid NODE_VERSION: $ver"
 }
 
 load_profile() {
@@ -65,9 +105,100 @@ load_repo_profile() {
 
 apply_node_version() {
   activate_fnm
-  if [[ -n "${NODE_VERSION:-}" ]] && command -v fnm >/dev/null 2>&1; then
-    fnm use "$NODE_VERSION" 2>/dev/null || fnm install "$NODE_VERSION" && fnm use "$NODE_VERSION"
+  if [[ -n "${NODE_VERSION:-}" ]]; then
+    validate_node_version "$NODE_VERSION"
+    if command -v fnm >/dev/null 2>&1; then
+      fnm use "$NODE_VERSION" 2>/dev/null || fnm install "$NODE_VERSION"
+      fnm use "$NODE_VERSION"
+    fi
   fi
+}
+
+validate_repo_name() {
+  local name="$1"
+  [[ -n "$name" ]] || die "repo name required"
+  [[ "$name" != *"/"* && "$name" != *"\\"* ]] || die "repo name must not contain path separators"
+  [[ "$name" != "." && "$name" != ".." ]] || die "invalid repo name"
+  [[ "$name" != *".."* ]] || die "repo name must not contain '..'"
+}
+
+resolve_repo_dir() {
+  local name="$1"
+  validate_repo_name "$name"
+  [[ -d "$CODE_DIR" ]] || die "workspace missing: $CODE_DIR"
+
+  local code_real repo_dir
+  if ! code_real="$(realpath -e "$CODE_DIR")"; then
+    die "cannot resolve workspace: $CODE_DIR"
+  fi
+  if [[ ! -d "$CODE_DIR/$name" ]]; then
+    die "repo not found: $CODE_DIR/$name (clone into ~/code first)"
+  fi
+  if ! repo_dir="$(realpath -e "$CODE_DIR/$name")"; then
+    die "cannot resolve repo path: $CODE_DIR/$name"
+  fi
+  if [[ "$repo_dir" != "$code_real" && "$repo_dir" != "$code_real/"* ]]; then
+    die "repo path escapes workspace (resolved: $repo_dir)"
+  fi
+  printf '%s' "$repo_dir"
+}
+
+path_owner() {
+  local p="$1"
+  if stat -c '%U' "$p" >/dev/null 2>&1; then
+    stat -c '%U' "$p"
+  else
+    stat -f '%Su' "$p"
+  fi
+}
+
+check_owned_by_user() {
+  local p="$1" label="$2"
+  [[ -e "$p" ]] || return 0
+  local owner me
+  owner="$(path_owner "$p")"
+  me="$(whoami)"
+  if [[ "$owner" != "$me" ]]; then
+    warn "$label not owned by $me (owner: $owner): $p"
+    return 1
+  fi
+  printf '  %s: ok (owned by %s)\n' "$label" "$me"
+}
+
+is_secret_env_key() {
+  local key="$1"
+  local upper
+  upper="$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')"
+  [[ "$upper" == *KEY* || "$upper" == *TOKEN* || "$upper" == *SECRET* \
+    || "$upper" == *PASSWORD* || "$upper" == *CREDENTIAL* || "$upper" == *AUTH* ]]
+}
+
+is_allowed_env_key() {
+  local key="$1"
+  case "$key" in
+    NODE_VERSION | ENV | API_URL | PNPM_HOME)
+      return 0
+      ;;
+    DEVBOX_* | PNPM_*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+print_safe_env() {
+  local key line
+  while IFS= read -r line; do
+    [[ "$line" == *"="* ]] || continue
+    key="${line%%=*}"
+    if is_secret_env_key "$key"; then
+      printf '%s=<redacted>\n' "$key"
+    elif is_allowed_env_key "$key"; then
+      printf '%s\n' "$line"
+    fi
+  done < <(env | sort)
 }
 
 cmd_doctor() {
@@ -79,6 +210,27 @@ cmd_doctor() {
   else
     echo "  WSL: no (expected on Windows via WSL2 Ubuntu)"
   fi
+
+  check_owned_by_user "$DEVBOX_ROOT" "DEVBOX_ROOT" || true
+  check_owned_by_user "$DEVBOX_ROOT/bin/devbox" "devbox script" || true
+
+  local cli="$HOME/.local/bin/devbox"
+  if [[ -L "$cli" ]]; then
+    local target expected
+    target="$(readlink "$cli")"
+    expected="$DEVBOX_ROOT/bin/devbox"
+    if [[ "$target" == "$expected" ]]; then
+      echo "  devbox symlink: ok -> $target"
+    else
+      warn "devbox symlink points to $target (expected $expected)"
+    fi
+    check_owned_by_user "$cli" "devbox CLI symlink" || true
+  elif [[ -e "$cli" ]]; then
+    warn "devbox exists but is not a symlink: $cli"
+  else
+    echo "  devbox symlink: missing ($cli) — run install.sh"
+  fi
+
   activate_fnm
   for cmd in node npm pnpm git; do
     if command -v "$cmd" >/dev/null 2>&1; then
@@ -95,6 +247,7 @@ cmd_doctor() {
   else
     echo "  workspace: missing — mkdir -p $CODE_DIR"
   fi
+  local pwd_out
   pwd_out="$(pwd 2>/dev/null || true)"
   if [[ "$pwd_out" == /mnt/* ]]; then
     echo "  warning: current directory is on Windows mount ($pwd_out) — use ~/code for speed"
@@ -105,8 +258,8 @@ cmd_env() {
   local profile="${1:-default}"
   load_profile "$profile"
   apply_node_version
-  echo "# profile: $profile"
-  env | grep -E '^(NODE_|PNPM_|DEVBOX_|ENV=|API_|FEATURE_)' | sort || true
+  echo "# profile: $profile (allowlisted keys only)"
+  print_safe_env
 }
 
 cmd_list() {
@@ -123,28 +276,59 @@ cmd_list() {
   done
 }
 
+maybe_run_hooks() {
+  local repo_dir="$1"
+  local trust_hooks="$2"
+  local hooks="$repo_dir/.devbox/hooks.sh"
+  [[ -f "$hooks" ]] || return 0
+
+  if [[ "$trust_hooks" == "1" || "${DEVBOX_TRUST_HOOKS:-}" == "1" ]]; then
+    # shellcheck source=/dev/null
+    source "$hooks"
+    return 0
+  fi
+
+  warn ".devbox/hooks.sh exists but was not executed"
+  warn "use: devbox repo $(basename "$repo_dir") --trust-hooks   or DEVBOX_TRUST_HOOKS=1"
+}
+
 cmd_repo() {
-  local name="${1:-}"
-  [[ -n "$name" ]] || die "usage: devbox repo <name>"
-  local repo_dir="$CODE_DIR/$name"
-  [[ -d "$repo_dir" ]] || die "repo not found: $repo_dir (clone into ~/code first)"
+  local trust_hooks=0
+  local name=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --trust-hooks)
+        trust_hooks=1
+        shift
+        ;;
+      -h | --help)
+        echo "usage: devbox repo <name> [--trust-hooks]"
+        exit 0
+        ;;
+      -*)
+        die "unknown option: $1"
+        ;;
+      *)
+        [[ -z "$name" ]] || die "unexpected extra argument: $1"
+        name="$1"
+        shift
+        ;;
+    esac
+  done
+  [[ -n "$name" ]] || die "usage: devbox repo <name> [--trust-hooks]"
+
+  local repo_dir
+  repo_dir="$(resolve_repo_dir "$name")"
 
   load_profile "$name"
   load_repo_profile "$repo_dir"
   apply_node_version
-
-  local hooks="$repo_dir/.devbox/hooks.sh"
-  if [[ -f "$hooks" ]]; then
-    # shellcheck source=/dev/null
-    source "$hooks"
-  fi
+  maybe_run_hooks "$repo_dir" "$trust_hooks"
 
   cd "$repo_dir"
   echo "devbox: $repo_dir"
   exec "${SHELL:-bash}" -l
 }
-
-die() { printf 'devbox: %s\n' "$*" >&2; exit 1; }
 
 main() {
   local cmd="${1:-help}"
@@ -152,10 +336,13 @@ main() {
   case "$cmd" in
     doctor) cmd_doctor ;;
     env) cmd_env "${1:-default}" ;;
-    repo) cmd_repo "${1:-}" ;;
+    repo) cmd_repo "$@" ;;
     list) cmd_list ;;
-    help|-h|--help) usage ;;
-    *) usage; die "unknown command: $cmd" ;;
+    help | -h | --help) usage ;;
+    *)
+      usage
+      die "unknown command: $cmd"
+      ;;
   esac
 }
 

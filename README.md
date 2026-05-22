@@ -100,18 +100,24 @@ cd ~/devbox
 *Run this command inside your WSL Ubuntu terminal:*
 
 ```bash
+# optional: auto-configure ~/.bashrc
+export DEVBOX_PATCH_SHELL=1
 bash install.sh
 ```
 
+Pinned toolchain versions live in `config/versions.sh`. See [docs/SECURITY.md](docs/SECURITY.md) for the corporate security model.
+
 ## Post Install
 
-Restart shell:
+Restart shell (or open a new terminal):
 
 *Run this command inside your WSL Ubuntu terminal:*
 
 ```bash
 exec bash
 ```
+
+If you skipped `DEVBOX_PATCH_SHELL=1`, add `~/.local/bin` and fnm to your PATH manually, or re-run install with that variable set.
 
 Verify installation:
 
@@ -125,11 +131,13 @@ pnpm -v
 
 ### Corporate proxy / TLS (optional)
 
-If installs fail behind SSL inspection, copy the example config and adjust:
+If installs fail behind SSL inspection, install your organization root CA — do not disable TLS verification:
 
 ```bash
 cp config/env.example config/env.local
-# edit config/env.local, then re-run install.sh
+chmod 600 config/env.local
+# Set DEVBOX_CA_CERT_FILE=/path/to/company-root-ca.pem
+# Re-run: bash install.sh
 ```
 
 ## devbox CLI
@@ -138,10 +146,11 @@ After install, `devbox` is on your PATH.
 
 | Command | Purpose |
 |---------|---------|
-| `devbox doctor` | Check Node, pnpm, WSL, and workspace paths |
+| `devbox doctor` | Check Node, pnpm, WSL, workspace paths, and file ownership |
 | `devbox list` | List folders under `~/code` |
 | `devbox repo <name>` | `cd` into `~/code/<name>` with profile env loaded |
-| `devbox env [profile]` | Show variables from a profile file |
+| `devbox repo <name> --trust-hooks` | Same, and run `.devbox/hooks.sh` (trusted repos only) |
+| `devbox env [profile]` | Show allowlisted profile variables (secrets redacted) |
 
 ### Per-repo profiles (optional)
 
@@ -158,7 +167,12 @@ NODE_VERSION=22
 API_URL=http://localhost:3000
 ```
 
-Optional `.devbox/hooks.sh` runs before the repo shell opens (e.g. `docker compose up -d`).
+Optional `.devbox/hooks.sh` runs only with explicit trust (arbitrary shell code):
+
+```bash
+devbox repo my-repo --trust-hooks
+# or: export DEVBOX_TRUST_HOOKS=1
+```
 
 Shared team profiles live in `~/devbox/profiles/<repo-name>.env`.
 
