@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Export Zscaler CA from Windows cert stores into devbox config (WSL).
+# One-time machine onboarding: export Zscaler CA from Windows into devbox config (WSL).
+# Not used by application repos. See docs/CORPORATE-TLS.md.
 set -euo pipefail
 
 DEVBOX_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -88,4 +89,5 @@ set_env_local() {
 
 set_env_local "$DEST_CERT"
 
-log "done — run: bash install.sh   (or re-run to apply CA to Node/apt trust)"
+log "done — verify: curl -fsSL https://nodejs.org/dist/index.json | head -c 80"
+log "next: bash install.sh"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# devbox one-time WSL2 bootstrap: fnm, Node 22, pnpm, turbo, workspace layout.
+# devbox — one-time WSL2 machine bootstrap (not required inside application repos).
 set -euo pipefail
 
 DEVBOX_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -122,6 +122,9 @@ install_node_stack() {
 
 configure_corporate_ca() {
   if [[ -z "${DEVBOX_CA_CERT_FILE:-}" ]]; then
+    if grep -qi microsoft /proc/version 2>/dev/null; then
+      warn "DEVBOX_CA_CERT_FILE not set — if curl/fnm fail TLS, see docs/CORPORATE-TLS.md"
+    fi
     return 0
   fi
   [[ -f "$DEVBOX_CA_CERT_FILE" ]] || die "DEVBOX_CA_CERT_FILE not found: $DEVBOX_CA_CERT_FILE"
@@ -132,15 +135,23 @@ configure_corporate_ca() {
     sudo chmod 644 /usr/local/share/ca-certificates/devbox-corporate.crt
     sudo update-ca-certificates
   else
-    warn "update-ca-certificates not found — set NODE_EXTRA_CA_CERTS only"
+    warn "update-ca-certificates not found — using SSL_CERT_FILE / NODE_EXTRA_CA_CERTS only"
   fi
-  export NODE_EXTRA_CA_CERTS="$DEVBOX_CA_CERT_FILE"
-  log "NODE_EXTRA_CA_CERTS=$NODE_EXTRA_CA_CERTS"
+  export_tooling_ssl_certs
+}
+
+export_tooling_ssl_certs() {
+  if [[ -n "${DEVBOX_CA_CERT_FILE:-}" && -f "$DEVBOX_CA_CERT_FILE" ]]; then
+    export SSL_CERT_FILE="$DEVBOX_CA_CERT_FILE"
+    export NODE_EXTRA_CA_CERTS="$DEVBOX_CA_CERT_FILE"
+    export CURL_CA_BUNDLE="$DEVBOX_CA_CERT_FILE"
+    log "SSL_CERT_FILE set for curl/fnm/npm"
+  fi
 }
 
 install_global_tools() {
   activate_fnm
-  configure_corporate_ca
+  export_tooling_ssl_certs
   log "installing pnpm@${PNPM_VERSION} and turbo@${TURBO_VERSION}"
   npm install -g "pnpm@${PNPM_VERSION}" "turbo@${TURBO_VERSION}"
   pnpm -v
@@ -192,8 +203,10 @@ EOF
 }
 
 main() {
-  log "devbox install (root: $DEVBOX_ROOT)"
+  log "devbox machine bootstrap (root: $DEVBOX_ROOT)"
   install_apt_baseline
+  configure_corporate_ca
+  export_tooling_ssl_certs
   install_fnm
   install_node_stack
   install_global_tools
@@ -201,7 +214,8 @@ main() {
   ensure_workspace
   install_devbox_cli
   patch_shell_rc
-  log "done — run: exec bash   then: devbox doctor"
+  log "done — clone team repos into ~/code (devbox not required per repo)"
+  log "next: exec bash && devbox doctor"
   log "tip: export DEVBOX_PATCH_SHELL=1 before install to auto-configure bash"
 }
 

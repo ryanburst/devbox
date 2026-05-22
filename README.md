@@ -1,329 +1,156 @@
 # devbox
 
-A standardized WSL2-based development environment for engineering teams.
+**One-time bootstrap for corporate Windows laptops** — prepares WSL2 Ubuntu so developers can clone any team repo and use standard `git` + `pnpm` without installing devbox into those projects.
 
-## Overview
+## What devbox is
 
-devbox provides a fast, consistent Linux development environment on Windows using WSL2.
+| devbox is | devbox is not |
+|-----------|----------------|
+| Machine setup automation (`install.sh`) | A dependency inside application repos |
+| Pinned Node / pnpm / turbo on WSL | A replacement for each repo’s `package.json` scripts |
+| `~/code` + TLS conventions | A Docker-first dev container on `C:\` |
+| Optional CLI (`devbox doctor`, `devbox repo`) | Required for `pnpm dev` to work |
 
-It standardizes:
+**After bootstrap**, daily work looks like any normal monorepo:
 
-* Node.js (via fnm)
-
-* pnpm package management
-
-* Git HTTPS authentication via Git Credential Manager
-
-* Optional Docker service containers
-
-* Per-repo environment profiles
-
-## Architecture
-
-* **Windows**: Git + Docker Desktop + WSL launcher only
-
-* **WSL2 Ubuntu**: primary development environment
-
-* **Node.js**: fnm-managed
-
-* **Package manager**: pnpm
-
-* **Services**: Docker (optional, for dependencies only)
-
-## First-Time Setup (Windows)
-
-### 1. Install WSL2 + Ubuntu
-
-*Run this command in Windows PowerShell:*
-
-```powershell
-wsl --install -d Ubuntu
-```
-
-Restart your machine after installation.
-
-### 2. Verify WSL installation
-
-*Run this command in Windows PowerShell:*
-
-```powershell
-wsl -l -v
-```
-
-You should see:
-
-* Ubuntu
-
-* docker-desktop
-
-### 3. Launch Ubuntu
-
-*Run this command in Windows PowerShell:*
-
-```powershell
+```bash
 wsl
+cd ~/code/your-app
+pnpm install && pnpm dev
 ```
 
-Create your UNIX user when prompted.
+## Why WSL2 (not Windows or container-on-`C:\`)
 
-## WSL Setup (Ubuntu)
+- **Policy:** Corporate Windows often blocks npm lifecycle scripts; they run fine in **WSL Linux bash**.
+- **Speed:** `pnpm` and `node_modules` on the WSL filesystem (`~/code`) are much faster than on `C:\` or `/mnt/c/...`.
+- **Simplicity:** No per-project devbox config required; optional helpers only.
 
-### Update system packages
+Docker is **optional** for local **services** (Postgres, Redis) — not the primary place to run `pnpm dev`.
 
-*Run these commands inside your WSL Ubuntu terminal:*
+## Architecture (short)
 
-```bash
-sudo apt update && sudo apt upgrade -y
+```text
+Windows  →  Git + GCM, Docker Desktop, VS Code, Zscaler (launcher only)
+WSL2     →  Node, pnpm, turbo, all installs and repo scripts
+~/code   →  every team repository clone
 ```
 
-### Install required tools
+Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-*Run this command inside your WSL Ubuntu terminal:*
+## New developer checklist
 
-```bash
-sudo apt install -y curl git ca-certificates unzip build-essential
-```
+Full steps: **[docs/ONBOARDING.md](docs/ONBOARDING.md)**
 
-## Install devbox
-
-### Clone repository
-
-*Run these commands inside your WSL Ubuntu terminal:*
+1. **Windows:** `wsl --install -d Ubuntu` → restart → `wsl`
+2. **WSL:** `sudo apt update` and install base packages (see onboarding doc)
+3. **TLS (if needed):** [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md) — **before** `install.sh` if `curl` fails HTTPS
+4. **Bootstrap:**
 
 ```bash
-git clone https://github.com/<your-org>/devbox ~/devbox
+git clone https://github.com/ryanburst/devbox.git ~/devbox
 cd ~/devbox
-```
-
-### Run installer
-
-*Run this command inside your WSL Ubuntu terminal:*
-
-```bash
-# optional: auto-configure ~/.bashrc
-export DEVBOX_PATCH_SHELL=1
+export DEVBOX_PATCH_SHELL=1   # optional: add devbox to ~/.bashrc
 bash install.sh
-```
-
-Pinned toolchain versions live in `config/versions.sh`. See [docs/SECURITY.md](docs/SECURITY.md) for the corporate security model.
-
-## Post Install
-
-Restart shell (or open a new terminal):
-
-*Run this command inside your WSL Ubuntu terminal:*
-
-```bash
 exec bash
-```
-
-If you skipped `DEVBOX_PATCH_SHELL=1`, add `~/.local/bin` and fnm to your PATH manually, or re-run install with that variable set.
-
-Verify installation:
-
-*Run these commands inside your WSL Ubuntu terminal:*
-
-```bash
 devbox doctor
-node -v
-pnpm -v
 ```
 
-### Corporate proxy / TLS (optional)
-
-If installs fail behind SSL inspection, install your organization root CA — do not disable TLS verification.
-
-#### Zscaler (automated from WSL)
-
-Requires **Zscaler Client Connector** installed on Windows (certificates present in Windows stores).
-
-*Run inside WSL from your devbox clone:*
-
-```bash
-bash scripts/sync-zscaler-ca.sh
-bash install.sh
-```
-
-This script:
-
-1. Runs `scripts/windows/Export-ZscalerCa.ps1` on Windows
-2. Copies the cert to `config/zscaler-root.cer` (gitignored)
-3. Writes `DEVBOX_CA_CERT_FILE` in `config/env.local`
-
-List certs without exporting:
-
-```powershell
-# Windows PowerShell
-.\scripts\windows\Export-ZscalerCa.ps1 -ListOnly
-```
-
-#### Manual / other vendors
-
-```bash
-cp config/env.example config/env.local
-chmod 600 config/env.local
-# Set DEVBOX_CA_CERT_FILE=/path/to/company-root-ca.pem
-bash install.sh
-```
-
-## devbox CLI
-
-After install, `devbox` is on your PATH.
-
-| Command | Purpose |
-|---------|---------|
-| `devbox doctor` | Check Node, pnpm, WSL, workspace paths, and file ownership |
-| `devbox list` | List folders under `~/code` |
-| `devbox repo <name>` | `cd` into `~/code/<name>` with profile env loaded |
-| `devbox repo <name> --trust-hooks` | Same, and run `.devbox/hooks.sh` (trusted repos only) |
-| `devbox env [profile]` | Show allowlisted profile variables (secrets redacted) |
-
-### Per-repo profiles (optional)
-
-In a project repo:
-
-```bash
-mkdir -p .devbox
-```
-
-Create `.devbox/profile.env`:
-
-```bash
-NODE_VERSION=22
-API_URL=http://localhost:3000
-```
-
-Optional `.devbox/hooks.sh` runs only with explicit trust (arbitrary shell code):
-
-```bash
-devbox repo my-repo --trust-hooks
-# or: export DEVBOX_TRUST_HOOKS=1
-```
-
-Shared team profiles live in `~/devbox/profiles/<repo-name>.env`.
-
-## Workspace Convention
-
-All repositories must live in:
-
-*Inside your WSL Ubuntu filesystem:*
-
-```bash
-~/code
-```
-
-Example:
-
-*Run these commands inside your WSL Ubuntu terminal:*
+5. **Any project** (devbox not required in the repo):
 
 ```bash
 cd ~/code
-git clone https://github.company.com/team/repo.git
-```
-
-## Daily Usage
-
-Start WSL:
-
-*Run this command in Windows PowerShell or the Windows Command Prompt:*
-
-```powershell
-wsl
-```
-
-Navigate to project:
-
-*Run this command inside your WSL Ubuntu terminal:*
-
-```bash
-cd ~/code/repo
-```
-
-Install dependencies:
-
-*Run this command inside your WSL Ubuntu terminal:*
-
-```bash
+git clone https://github.yourcompany.com/team/your-app.git
+cd your-app
 pnpm install
-```
-
-Run development server:
-
-*Run this command inside your WSL Ubuntu terminal:*
-
-```bash
 pnpm dev
 ```
 
-## Performance Notes
+## Corporate TLS (Zscaler)
 
-* Always work inside WSL filesystem (`~/code`)
-
-* Avoid `/mnt/c` for repositories (slow)
-
-* pnpm store located at `~/.pnpm-store`
-
-## Docker Usage (Optional)
-
-Docker is used only for supporting services:
-
-*Run this command inside your WSL Ubuntu terminal, in the directory containing your `docker-compose.yml` file:*
+If `curl` or `fnm` fail with certificate errors, configure trust **before** `install.sh`:
 
 ```bash
+# WSL with Windows interop (one-time)
+bash scripts/sync-zscaler-ca.sh
+
+# Verify
+curl -fsSL https://nodejs.org/dist/index.json | head -c 80
+
+bash install.sh
+```
+
+Host-only export (no WSL→PowerShell): [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md)
+
+## Optional: devbox CLI
+
+Convenience only — **not** needed for application builds.
+
+| Command | Purpose |
+|---------|---------|
+| `devbox doctor` | Verify WSL toolchain, paths, ownership |
+| `devbox list` | List directories in `~/code` |
+| `devbox repo <name>` | `cd ~/code/<name>` and load optional env profile |
+| `devbox repo <name> --trust-hooks` | Also run trusted `.devbox/hooks.sh` |
+
+Optional per-repo files (teams that want them):
+
+- `.devbox/profile.env` — extra env vars
+- `.devbox/hooks.sh` — only with `--trust-hooks` (arbitrary shell; trusted repos)
+
+Shared profiles: `~/devbox/profiles/<repo-name>.env`
+
+## Workspace rule
+
+Clone **only** under the WSL Linux home — not Windows drives:
+
+```bash
+~/code/my-repo     # yes
+/mnt/c/Users/...   # no — slow
+```
+
+pnpm store: `~/.pnpm-store` (configured by `install.sh`)
+
+## Docker (optional services)
+
+From a repo that includes compose files:
+
+```bash
+cd ~/code/my-app
 docker compose up -d
 ```
 
-Examples:
-
-* Postgres
-
-* Redis
-
-* Local infrastructure services
+Run app code with `pnpm` in WSL, not inside a dev container on `C:\`.
 
 ## Authentication
 
-* Uses HTTPS GitHub Enterprise URLs
+- HTTPS Git remote URLs
+- Git Credential Manager on **Windows** (browser / SSO)
+- No SSH keys required for standard setup
 
-* Git Credential Manager (browser login)
+## Configuration
 
-* No SSH keys required
+| File | Purpose |
+|------|---------|
+| `config/versions.sh` | Pinned fnm, Node, pnpm, turbo |
+| `config/env.local` | Machine proxy, CA path (gitignored) — copy from `config/env.example` |
+| `config/zscaler-root.cer` | Exported CA (gitignored) |
+
+Security: [docs/SECURITY.md](docs/SECURITY.md)
 
 ## Troubleshooting
 
-Restart WSL:
+[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) — TLS, fnm, slow installs, sync script errors.
 
-*Run this command in Windows PowerShell:*
+## Documentation index
 
-```powershell
-wsl --shutdown
-```
-
-Slow installs:
-Ensure repo is inside:
-
-*Your WSL Ubuntu filesystem:*
-
-```bash
-~/code
-```
-
-NOT:
-
-*A mounted Windows directory:*
-
-```bash
-/mnt/c/...
-```
+| Doc | Audience |
+|-----|----------|
+| [ONBOARDING.md](docs/ONBOARDING.md) | New hires |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Leads / platform |
+| [CORPORATE-TLS.md](docs/CORPORATE-TLS.md) | Zscaler / proxy setup |
+| [SECURITY.md](docs/SECURITY.md) | Security review |
+| [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Support |
 
 ## Summary
 
-devbox provides:
-
-* Fast WSL2 Linux dev environment
-
-* Standard Node + pnpm setup
-
-* Consistent team onboarding
-
-* Optional Docker service layer
+devbox prepares the **laptop once**; teams ship normal repos. Use WSL + `~/code` for speed and policy compliance; keep Windows as a thin launcher.

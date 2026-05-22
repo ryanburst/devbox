@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# devbox — WSL2 workspace helper (profiles, doctor, repo entry).
+# devbox — optional WSL helpers (doctor, repo entry). Not required for pnpm dev in ~/code.
 set -euo pipefail
 
 die() { printf 'devbox: %s\n' "$*" >&2; exit 1; }
