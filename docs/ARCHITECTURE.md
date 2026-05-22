@@ -30,7 +30,7 @@ Application repos **do not need** devbox as a dependency. No `devbox` package in
                            │  wsl
 ┌──────────────────────────▼──────────────────────────────┐
 │  WSL2 Ubuntu (primary development runtime)               │
-│  • fnm + Node + pnpm + turbo (from devbox setup / install-toolchain) │
+│  • fnm + Node + pnpm + just + turbo (from devbox setup / install-toolchain) │
 │  • ~/code — all git clones                               │
 │  • ~/.pnpm-store — fast package cache                    │
 │  • Corporate CA in system trust (for curl, fnm, npm)     │
@@ -51,7 +51,7 @@ Application repos **do not need** devbox as a dependency. No `devbox` package in
 - System packages (`curl`, `git`, `build-essential`, …)
 - Corporate CA trust (when configured)
 - fnm + pinned Node LTS
-- Global `pnpm` and `turbo` (pinned)
+- Global `pnpm`, `just`, and `turbo` (pinned)
 - Optional: fnm in `~/.bashrc`
 
 ## What devbox does *not* require for daily work

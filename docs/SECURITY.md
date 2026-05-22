@@ -21,7 +21,7 @@ devbox is a **machine bootstrap** repository, not a runtime dependency of applic
 | Control | Location |
 |---------|----------|
 | Pinned fnm release + SHA-256 verify | `config/versions.sh`, `scripts/install-toolchain.sh` |
-| Pinned `pnpm` / `turbo` versions | `config/versions.sh`, `scripts/install-toolchain.sh` |
+| Pinned `pnpm` / `just` / `turbo` versions | `config/versions.sh`, `scripts/install-toolchain.sh` |
 | Corporate CA before HTTPS downloads | `install-toolchain.sh` (`configure_corporate_ca` before `fnm install`) |
 | No `curl \| bash` installer | `install-toolchain.sh` |
 | No `npm strict-ssl false` | use `DEVBOX_CA_CERT_FILE` |
@@ -34,7 +34,7 @@ devbox is a **machine bootstrap** repository, not a runtime dependency of applic
 
 ## Network egress (install)
 
-- `github.com` — fnm release artifact
+- `github.com` — fnm and `just` release artifacts
 - `registry.npmjs.org` — global `pnpm`, `turbo`, Node via fnm
 - `nodejs.org` — fnm version index and Node binaries
 

@@ -76,7 +76,7 @@ install_cli() {
   ensure_workspace
   patch_shell_rc_cli
   log "done — run: exec bash"
-  log "next: devbox setup   (TLS, Node, pnpm, turbo)"
+  log "next: devbox setup   (TLS, Node, pnpm, just, turbo)"
 }
 
 main() {

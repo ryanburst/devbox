@@ -54,7 +54,7 @@ devbox setup
 The wizard will:
 
 1. Test HTTPS and configure **corporate TLS / Zscaler** if needed
-2. Install the **toolchain** (apt packages, fnm, Node, pnpm, turbo)
+2. Install the **toolchain** (apt packages, fnm, Node, pnpm, just, turbo)
 3. Optionally add **fnm** to `~/.bashrc`
 4. Run **`devbox doctor`**
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# devbox — WSL toolchain bootstrap (fnm, Node, pnpm, turbo). Run via: devbox setup
+# devbox — WSL toolchain bootstrap (Node, pnpm, just, turbo). Run via: devbox setup
 set -euo pipefail
 
 DEVBOX_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -147,13 +147,59 @@ configure_corporate_ca() {
   log "SSL_CERT_FILE set for curl/fnm/npm"
 }
 
-install_global_tools() {
+install_pnpm_and_turbo() {
   activate_fnm
   devbox_export_ssl_certs
   log "installing pnpm@${PNPM_VERSION} and turbo@${TURBO_VERSION}"
   npm_quiet install -g --loglevel=error "pnpm@${PNPM_VERSION}" "turbo@${TURBO_VERSION}"
   pnpm -v
   turbo --version
+}
+
+install_just() {
+  local arch asset expected tmp url installed_ver
+  mkdir -p "${HOME}/.local/bin"
+  export PATH="${HOME}/.local/bin:${PATH}"
+
+  if command -v just >/dev/null 2>&1; then
+    installed_ver="$(just --version 2>/dev/null | awk '{print $2}' || true)"
+    if [[ "$installed_ver" == "$JUST_VERSION" ]]; then
+      log "just already installed (${installed_ver})"
+      return 0
+    fi
+  fi
+
+  arch="$(uname -m)"
+  case "$arch" in
+    x86_64 | amd64)
+      asset="just-${JUST_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+      expected="$JUST_SHA256_X86_64"
+      ;;
+    aarch64 | arm64)
+      asset="just-${JUST_VERSION}-aarch64-unknown-linux-musl.tar.gz"
+      expected="$JUST_SHA256_AARCH64"
+      ;;
+    *)
+      die "unsupported architecture for just: $arch"
+      ;;
+  esac
+
+  url="https://github.com/casey/just/releases/download/${JUST_VERSION}/${asset}"
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"; trap - RETURN' RETURN
+
+  log "installing just v${JUST_VERSION} (${asset})"
+  devbox_export_ssl_certs
+  curl -fsSL "$url" -o "$tmp/just.tar.gz"
+  verify_sha256 "$tmp/just.tar.gz" "$expected"
+  tar -xzf "$tmp/just.tar.gz" -C "$tmp"
+  [[ -f "$tmp/just" ]] || die "just binary missing in archive"
+  install -m 755 "$tmp/just" "${HOME}/.local/bin/just"
+  command -v just >/dev/null 2>&1 || die "just not on PATH after install"
+  just --version
+
+  rm -rf "$tmp"
+  trap - RETURN
 }
 
 configure_pnpm() {
@@ -228,7 +274,8 @@ main() {
   devbox_export_ssl_certs
   install_fnm
   install_node_stack
-  install_global_tools
+  install_pnpm_and_turbo
+  install_just
   configure_pnpm
   ensure_workspace
   patch_shell_rc_full

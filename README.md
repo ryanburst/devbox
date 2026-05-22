@@ -69,7 +69,7 @@ devbox setup
 The interactive wizard will:
 
 1. Check HTTPS and configure **corporate TLS / Zscaler** if needed
-2. Install **fnm**, **Node 22**, **pnpm**, and **turbo** (pinned versions)
+2. Install **Node.js 22** (fnm), **pnpm**, **just**, and **turbo** (pinned versions)
 3. Optionally add **fnm** to `~/.bashrc`
 4. Run **`devbox doctor`**
 
@@ -85,6 +85,7 @@ devbox setup tls
 devbox doctor
 node -v
 pnpm -v
+just --version
 curl -fsSL https://nodejs.org/dist/index.json | head -c 80 && echo " TLS OK"
 ```
 
@@ -138,7 +139,7 @@ Do **not** run `pnpm` or repo scripts in PowerShell; use WSL bash.
 | Command | When |
 |---------|------|
 | `bash install.sh` | Once, after cloning devbox (installs CLI) |
-| `devbox setup` | Once, after `install.sh` (TLS + Node + pnpm) |
+| `devbox setup` | Once, after `install.sh` (TLS + Node + pnpm + just) |
 | `devbox doctor` | When something looks wrong |
 | `devbox setup tls` | HTTPS / certificate errors only |
 | `devbox reset` | Undo install (retry from `bash install.sh`) |
@@ -222,7 +223,7 @@ WSL2     →  Node, pnpm, turbo, all installs and repo scripts
 
 | File | Purpose |
 |------|---------|
-| `config/versions.sh` | Pinned fnm, Node, pnpm, turbo |
+| `config/versions.sh` | Pinned fnm, Node, pnpm, just, turbo |
 | `config/env.local` | Proxy, CA path (copy from `config/env.example`; gitignored) |
 
 ---

@@ -158,15 +158,16 @@ devbox_setup_wizard() {
     fi
   fi
 
-  printf '\n── Step 2: Toolchain (Node, pnpm, turbo) ──\n'
-  if command -v node >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
+  printf '\n── Step 2: Toolchain (Node, pnpm, just, turbo) ──\n'
+  if command -v node >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1 && command -v just >/dev/null 2>&1; then
     printf '  node: %s\n' "$(node -v 2>/dev/null || echo missing)"
     printf '  pnpm: %s\n' "$(pnpm -v 2>/dev/null || echo missing)"
+    printf '  just: %s\n' "$(just --version 2>/dev/null || echo missing)"
     if devbox_prompt_yn "Re-run toolchain install to refresh pinned versions?" n; then
       bash "$DEVBOX_ROOT/scripts/install-toolchain.sh"
     fi
   else
-    if devbox_prompt_yn "Install toolchain now? (apt packages, fnm, Node, pnpm, turbo)" y; then
+    if devbox_prompt_yn "Install toolchain now? (Node, pnpm, just, turbo)" y; then
       bash "$DEVBOX_ROOT/scripts/install-toolchain.sh"
     else
       warn "skipped toolchain — run: devbox setup"

@@ -249,7 +249,7 @@ cmd_doctor() {
   fi
 
   activate_fnm
-  for cmd in node npm pnpm git; do
+  for cmd in node npm pnpm just git; do
     if command -v "$cmd" >/dev/null 2>&1; then
       echo "  $cmd: $($cmd --version 2>/dev/null | head -1)"
     else

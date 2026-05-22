@@ -104,6 +104,11 @@ remove_toolchain() {
     npm uninstall -g pnpm turbo 2>/dev/null || warn "could not npm uninstall -g pnpm turbo"
   fi
 
+  if [[ -f "$HOME/.local/bin/just" ]]; then
+    rm -f "$HOME/.local/bin/just"
+    log "removed ~/.local/bin/just"
+  fi
+
   if [[ -d "$HOME/.pnpm-store" ]]; then
     if prompt_confirm "Remove pnpm store at ~/.pnpm-store?"; then
       rm -rf "$HOME/.pnpm-store"
