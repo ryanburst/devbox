@@ -5,6 +5,8 @@ set -euo pipefail
 DEVBOX_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=config/versions.sh
 source "$DEVBOX_ROOT/config/versions.sh"
+# shellcheck source=scripts/lib/corporate-ca.sh
+source "$DEVBOX_ROOT/scripts/lib/corporate-ca.sh"
 
 NODE_VERSION="${DEVBOX_NODE_VERSION:-$NODE_VERSION_DEFAULT}"
 PNPM_STORE="${DEVBOX_PNPM_STORE:-$HOME/.pnpm-store}"
@@ -123,35 +125,21 @@ install_node_stack() {
 configure_corporate_ca() {
   if [[ -z "${DEVBOX_CA_CERT_FILE:-}" ]]; then
     if grep -qi microsoft /proc/version 2>/dev/null; then
-      warn "DEVBOX_CA_CERT_FILE not set — if curl/fnm fail TLS, see docs/CORPORATE-TLS.md"
+      warn "DEVBOX_CA_CERT_FILE not set — run: devbox setup tls"
     fi
     return 0
   fi
   [[ -f "$DEVBOX_CA_CERT_FILE" ]] || die "DEVBOX_CA_CERT_FILE not found: $DEVBOX_CA_CERT_FILE"
-
   log "installing corporate CA certificate"
-  if command -v update-ca-certificates >/dev/null 2>&1; then
-    sudo cp "$DEVBOX_CA_CERT_FILE" /usr/local/share/ca-certificates/devbox-corporate.crt
-    sudo chmod 644 /usr/local/share/ca-certificates/devbox-corporate.crt
-    sudo update-ca-certificates
-  else
-    warn "update-ca-certificates not found — using SSL_CERT_FILE / NODE_EXTRA_CA_CERTS only"
-  fi
-  export_tooling_ssl_certs
-}
-
-export_tooling_ssl_certs() {
-  if [[ -n "${DEVBOX_CA_CERT_FILE:-}" && -f "$DEVBOX_CA_CERT_FILE" ]]; then
-    export SSL_CERT_FILE="$DEVBOX_CA_CERT_FILE"
-    export NODE_EXTRA_CA_CERTS="$DEVBOX_CA_CERT_FILE"
-    export CURL_CA_BUNDLE="$DEVBOX_CA_CERT_FILE"
-    log "SSL_CERT_FILE set for curl/fnm/npm"
-  fi
+  devbox_apply_corporate_ca "$DEVBOX_CA_CERT_FILE" \
+    || warn "could not install CA into system store (using SSL_CERT_FILE for this session)"
+  devbox_export_ssl_certs
+  log "SSL_CERT_FILE set for curl/fnm/npm"
 }
 
 install_global_tools() {
   activate_fnm
-  export_tooling_ssl_certs
+  devbox_export_ssl_certs
   log "installing pnpm@${PNPM_VERSION} and turbo@${TURBO_VERSION}"
   npm install -g "pnpm@${PNPM_VERSION}" "turbo@${TURBO_VERSION}"
   pnpm -v
@@ -206,7 +194,7 @@ main() {
   log "devbox machine bootstrap (root: $DEVBOX_ROOT)"
   install_apt_baseline
   configure_corporate_ca
-  export_tooling_ssl_certs
+  devbox_export_ssl_certs
   install_fnm
   install_node_stack
   install_global_tools

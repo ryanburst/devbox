@@ -33,41 +33,38 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y curl git ca-certificates unzip build-essential
 ```
 
-## Phase 3 — Corporate TLS (if `curl` fails HTTPS)
-
-Symptom: `curl: unable to get local issuer certificate`
-
-**Option A — Zscaler + WSL interop** (run from WSL after cloning devbox in Phase 4):
-
-```bash
-cd ~/devbox
-bash scripts/sync-zscaler-ca.sh
-```
-
-**Option B — IT-provided CA file:**
-
-```bash
-cp /path/from/it/company-root.cer ~/devbox/config/company-root.cer
-cp config/env.example config/env.local
-chmod 600 config/env.local
-# Edit env.local: export DEVBOX_CA_CERT_FILE=$HOME/devbox/config/company-root.cer
-```
-
-**Option C — Export on Windows host** (no WSL interop): see [CORPORATE-TLS.md](CORPORATE-TLS.md).
-
-Verify before install:
-
-```bash
-curl -fsSL https://nodejs.org/dist/index.json | head -c 80 && echo OK
-```
-
-## Phase 4 — Clone and run devbox (WSL)
+## Phase 3 — Clone devbox (WSL)
 
 ```bash
 git clone https://github.com/ryanburst/devbox.git ~/devbox
 cd ~/devbox
-export DEVBOX_PATCH_SHELL=1   # optional: auto-configure ~/.bashrc
-bash install.sh
+bash install.sh   # links devbox CLI; may warn on TLS until next step
+```
+
+## Phase 4 — Guided setup (TLS + toolchain)
+
+Symptom if skipped: `curl: unable to get local issuer certificate`
+
+```bash
+devbox setup
+```
+
+The wizard walks through:
+
+1. Corporate TLS / Zscaler (optional if HTTPS already works)
+2. `install.sh` (fnm, Node, pnpm, turbo)
+3. Optional `~/.bashrc` configuration
+4. `devbox doctor`
+
+TLS only:
+
+```bash
+devbox setup tls
+```
+
+Manual alternatives: [CORPORATE-TLS.md](CORPORATE-TLS.md).
+
+```bash
 exec bash
 devbox doctor
 ```

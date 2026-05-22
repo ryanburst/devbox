@@ -7,7 +7,15 @@ WSL Ubuntu does **not** automatically trust certificates installed on Windows. U
 
 `install.sh` installs the CA **before** downloading fnm or Node when `DEVBOX_CA_CERT_FILE` is set in `config/env.local`.
 
-## Recommended order
+## Recommended order (interactive)
+
+```bash
+cd ~/devbox
+devbox setup tls    # guided: Zscaler export, cert file, or skip
+devbox setup        # full wizard including install.sh
+```
+
+Or manually:
 
 ```bash
 # 1. Configure CA (pick one method below)
@@ -15,7 +23,6 @@ WSL Ubuntu does **not** automatically trust certificates installed on Windows. U
 curl -fsSL https://nodejs.org/dist/index.json | head -c 80
 
 # 3. Run bootstrap
-cd ~/devbox
 bash install.sh
 ```
 

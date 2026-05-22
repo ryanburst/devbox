@@ -40,27 +40,28 @@ PROFILES_DIR="$DEVBOX_ROOT/profiles"
 
 usage() {
   cat <<'EOF'
-devbox — WSL2 development helper
+devbox — WSL2 machine bootstrap helper
 
 Usage:
-  devbox doctor              Verify Node, pnpm, paths, ownership, and WSL
+  devbox                     Interactive menu (TTY only)
+  devbox setup               Guided wizard (TLS, install, shell)
+  devbox setup tls           Corporate CA / Zscaler only
+  devbox setup -y            Wizard with defaults (non-interactive)
+  devbox tls                 Alias for: devbox setup tls
+  devbox doctor              Verify Node, pnpm, paths, TLS, ownership
   devbox env [profile]       Print allowlisted environment variables
   devbox repo <name> [--trust-hooks]
                              Enter ~/code/<name> with profile env loaded
   devbox list                List repos under ~/code
   devbox help                Show this message
 
-Profiles:
+Profiles (optional):
   ~/devbox/profiles/<name>.env        (shared)
   ~/code/<repo>/.devbox/profile.env   (repo override)
 
 Per-repo hooks (opt-in only):
   ~/code/<repo>/.devbox/hooks.sh
   Run only with --trust-hooks or DEVBOX_TRUST_HOOKS=1
-
-Environment:
-  DEVBOX_TRUST_HOOKS=1       Allow sourcing .devbox/hooks.sh
-  DEVBOX_ALLOW_OVERRIDE=1    Allow DEVBOX_ROOT / DEVBOX_CODE_DIR overrides
 EOF
 }
 
@@ -247,6 +248,15 @@ cmd_doctor() {
   else
     echo "  workspace: missing — mkdir -p $CODE_DIR"
   fi
+  devbox_load_env_local
+  if devbox_test_https; then
+    echo "  HTTPS (nodejs.org): ok"
+  else
+    echo "  HTTPS (nodejs.org): FAILED — run: devbox setup tls"
+    if [[ -n "${DEVBOX_CA_CERT_FILE:-}" ]]; then
+      echo "  DEVBOX_CA_CERT_FILE=$DEVBOX_CA_CERT_FILE (try: devbox setup tls to apply)"
+    fi
+  fi
   local pwd_out
   pwd_out="$(pwd 2>/dev/null || true)"
   if [[ "$pwd_out" == /mnt/* ]]; then
@@ -330,10 +340,50 @@ cmd_repo() {
   exec "${SHELL:-bash}" -l
 }
 
+cmd_setup() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -y | --yes)
+        DEVBOX_SETUP_NONINTERACTIVE=1
+        shift
+        ;;
+      tls)
+        devbox_setup_tls_interactive
+        return 0
+        ;;
+      -h | --help)
+        echo "usage: devbox setup [-y] [tls]"
+        return 0
+        ;;
+      *)
+        die "unknown setup option: $1 (try: devbox setup tls)"
+        ;;
+    esac
+  done
+  devbox_setup_wizard
+}
+
+# shellcheck source=../scripts/lib/corporate-ca.sh
+source "$DEVBOX_ROOT/scripts/lib/corporate-ca.sh"
+# shellcheck source=../scripts/lib/interactive.sh
+source "$DEVBOX_ROOT/scripts/lib/interactive.sh"
+
 main() {
-  local cmd="${1:-help}"
-  shift || true
+  local cmd="${1-}"
+
+  if [[ -z "$cmd" ]]; then
+    if devbox_is_tty; then
+      devbox_interactive_menu
+    else
+      usage
+    fi
+    return 0
+  fi
+
+  shift
   case "$cmd" in
+    setup) cmd_setup "$@" ;;
+    tls) devbox_setup_tls_interactive ;;
     doctor) cmd_doctor ;;
     env) cmd_env "${1:-default}" ;;
     repo) cmd_repo "$@" ;;

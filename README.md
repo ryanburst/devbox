@@ -67,27 +67,32 @@ pnpm dev
 
 ## Corporate TLS (Zscaler)
 
-If `curl` or `fnm` fail with certificate errors, configure trust **before** `install.sh`:
+If `curl` or `fnm` fail with certificate errors:
 
 ```bash
-# WSL with Windows interop (one-time)
-bash scripts/sync-zscaler-ca.sh
-
-# Verify
-curl -fsSL https://nodejs.org/dist/index.json | head -c 80
-
-bash install.sh
+devbox setup tls
 ```
 
-Host-only export (no WSL→PowerShell): [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md)
+The wizard can export from Windows (Zscaler), use a cert file path, or copy from the host. Then run `devbox setup` or `bash install.sh`.
+
+Manual steps: [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md)
 
 ## Optional: devbox CLI
 
 Convenience only — **not** needed for application builds.
 
+**New machine:** run the guided wizard (handles TLS / Zscaler, `install.sh`, shell):
+
+```bash
+devbox setup
+# or: devbox          # interactive menu when run in a terminal
+```
+
 | Command | Purpose |
 |---------|---------|
-| `devbox doctor` | Verify WSL toolchain, paths, ownership |
+| `devbox setup` | Guided wizard (TLS, toolchain, `~/.bashrc`) |
+| `devbox setup tls` | Corporate CA / Zscaler only |
+| `devbox doctor` | Verify WSL toolchain, paths, HTTPS, ownership |
 | `devbox list` | List directories in `~/code` |
 | `devbox repo <name>` | `cd ~/code/<name>` and load optional env profile |
 | `devbox repo <name> --trust-hooks` | Also run trusted `.devbox/hooks.sh` |
