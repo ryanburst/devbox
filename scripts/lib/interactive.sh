@@ -195,8 +195,9 @@ devbox_interactive_menu() {
   3) Install toolchain only
   4) doctor
   5) list repos in ~/code
-  6) help
-  7) Exit")"
+  6) Reset devbox install
+  7) help
+  8) Exit")"
 
   case "$choice" in
     1) devbox_setup_wizard ;;
@@ -204,8 +205,9 @@ devbox_interactive_menu() {
     3) bash "$DEVBOX_ROOT/scripts/install-toolchain.sh" ;;
     4) cmd_doctor ;;
     5) cmd_list ;;
-    6) usage ;;
-    7 | q) exit 0 ;;
+    6) bash "$DEVBOX_ROOT/scripts/reset-devbox.sh" ;;
+    7) usage ;;
+    8 | q) exit 0 ;;
     *) die "invalid choice: $choice" ;;
   esac
 }

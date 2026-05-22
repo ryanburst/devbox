@@ -49,6 +49,17 @@ Windows policy does not apply to Linux bash in WSL.
 | `PowerShell not found` | No `/mnt/c/Windows/...` — use [CORPORATE-TLS.md](CORPORATE-TLS.md) Method 2 |
 | `No Zscaler certificates found` | Zscaler not installed/connected on Windows |
 
+## Retry install from scratch
+
+```bash
+devbox reset          # CLI + ~/.bashrc
+# or: devbox reset --full   # + fnm, pnpm, CA, etc.
+exec bash
+cd ~/devbox && bash install.sh && devbox setup
+```
+
+Details: [RESET.md](RESET.md)
+
 ## `.local/scripts/lib/corporate-ca.sh: No such file`
 
 The `devbox` on PATH is a symlink under `~/.local/bin`. An older CLI resolved the repo as `~/.local` instead of `~/devbox`.

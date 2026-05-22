@@ -135,6 +135,10 @@ Do **not** run `pnpm` or repo scripts in PowerShell; use WSL bash.
 | `devbox setup` | Once, after `install.sh` (TLS + Node + pnpm) |
 | `devbox doctor` | When something looks wrong |
 | `devbox setup tls` | HTTPS / certificate errors only |
+| `devbox reset` | Undo install (retry from `bash install.sh`) |
+| `devbox reset --full` | Also remove Node/pnpm/fnm and CA |
+
+Retry onboarding: [docs/RESET.md](docs/RESET.md)
 
 ---
 
@@ -222,6 +226,7 @@ WSL2     →  Node, pnpm, turbo, all installs and repo scripts
 | Doc | Audience |
 |-----|----------|
 | [ONBOARDING.md](docs/ONBOARDING.md) | Full checklist |
+| [RESET.md](docs/RESET.md) | Undo install and start over |
 | [CORPORATE-TLS.md](docs/CORPORATE-TLS.md) | Zscaler / manual CA |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Support |
 | [SECURITY.md](docs/SECURITY.md) | Security review |

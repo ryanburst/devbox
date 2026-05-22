@@ -62,6 +62,7 @@ Usage:
   devbox setup tls           Corporate CA / Zscaler only
   devbox setup -y            Wizard with defaults (non-interactive)
   devbox tls                 Alias for: devbox setup tls
+  devbox reset [--full] [-y] Undo install.sh / setup (see devbox reset --help)
   devbox doctor              Verify Node, pnpm, paths, TLS, ownership
   devbox env [profile]       Print allowlisted environment variables
   devbox repo <name> [--trust-hooks]
@@ -354,6 +355,10 @@ cmd_repo() {
   exec "${SHELL:-bash}" -l
 }
 
+cmd_reset() {
+  exec bash "$DEVBOX_ROOT/scripts/reset-devbox.sh" "$@"
+}
+
 cmd_setup() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -397,6 +402,7 @@ main() {
   shift
   case "$cmd" in
     setup) cmd_setup "$@" ;;
+    reset) cmd_reset "$@" ;;
     tls) devbox_setup_tls_interactive ;;
     doctor) cmd_doctor ;;
     env) cmd_env "${1:-default}" ;;
