@@ -5,8 +5,22 @@ set -euo pipefail
 die() { printf 'devbox: %s\n' "$*" >&2; exit 1; }
 warn() { printf 'devbox warning: %s\n' "$*" >&2; }
 
+_devbox_script_path() {
+  local script="${BASH_SOURCE[0]}"
+  if command -v readlink >/dev/null 2>&1; then
+    readlink -f "$script" 2>/dev/null && return 0
+  fi
+  if command -v realpath >/dev/null 2>&1; then
+    realpath "$script" 2>/dev/null && return 0
+  fi
+  printf '%s' "$script"
+}
+
 _devbox_script_root() {
-  cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd
+  local script root
+  script="$(_devbox_script_path)"
+  root="$(cd "$(dirname "$script")/.." && pwd)"
+  printf '%s' "$root"
 }
 
 resolve_devbox_root() {
@@ -17,7 +31,7 @@ resolve_devbox_root() {
     return 0
   fi
   if [[ -n "${DEVBOX_ROOT:-}" && "$DEVBOX_ROOT" != "$default_root" ]]; then
-    die "DEVBOX_ROOT override ignored (set DEVBOX_ALLOW_OVERRIDE=1 to allow)"
+    warn "ignoring DEVBOX_ROOT=$DEVBOX_ROOT; using $default_root"
   fi
   printf '%s' "$default_root"
 }
