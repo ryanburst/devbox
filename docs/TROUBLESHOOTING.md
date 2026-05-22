@@ -144,10 +144,13 @@ git clone https://github.yourcompany.com/team/your-app.git
 
 A Windows dialog or browser tab should open for SSO.
 
+`devbox setup git` installs a wrapper at `~/.local/bin/git-credential-manager` so Git does not split `Program Files` paths (error: `/mnt/c/Program: not found`).
+
 ### Verify GCM is reachable from WSL
 
 ```bash
 "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe" --version
+~/.local/bin/git-credential-manager --version
 ```
 
 ### Still no prompt?
