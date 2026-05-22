@@ -44,7 +44,7 @@ devbox — WSL2 machine bootstrap helper
 
 Usage:
   devbox                     Interactive menu (TTY only)
-  devbox setup               Guided wizard (TLS, install, shell)
+  devbox setup               Guided wizard (TLS, toolchain, shell)
   devbox setup tls           Corporate CA / Zscaler only
   devbox setup -y            Wizard with defaults (non-interactive)
   devbox tls                 Alias for: devbox setup tls
@@ -229,7 +229,7 @@ cmd_doctor() {
   elif [[ -e "$cli" ]]; then
     warn "devbox exists but is not a symlink: $cli"
   else
-    echo "  devbox symlink: missing ($cli) — run install.sh"
+    echo "  devbox symlink: missing ($cli) — run: bash install.sh"
   fi
 
   activate_fnm
@@ -237,7 +237,7 @@ cmd_doctor() {
     if command -v "$cmd" >/dev/null 2>&1; then
       echo "  $cmd: $($cmd --version 2>/dev/null | head -1)"
     else
-      echo "  $cmd: MISSING — run: bash $DEVBOX_ROOT/install.sh"
+      echo "  $cmd: MISSING — run: devbox setup"
     fi
   done
   if command -v pnpm >/dev/null 2>&1; then

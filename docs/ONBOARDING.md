@@ -26,51 +26,49 @@ wsl
 
 Create your Linux username when prompted.
 
-## Phase 2 — Clone devbox and run setup (WSL)
+## Phase 2 — Clone devbox and install CLI (WSL)
 
-Optional but recommended before the wizard (OS updates only — `install.sh` installs build tools):
+Optional OS updates:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 ```
 
-Clone and start the **interactive setup wizard** (handles TLS, `apt` packages, fnm, Node, pnpm, turbo):
+Clone and install the **devbox CLI** (does not install Node yet):
 
 ```bash
 git clone https://github.com/ryanburst/devbox.git ~/devbox
 cd ~/devbox
-bash bin/devbox setup
+bash install.sh
+exec bash
 ```
 
-Use `bash bin/devbox setup` the first time — the `devbox` command is added to your PATH during setup.
+`install.sh` links `devbox` to `~/.local/bin`, creates `~/code`, and adds a minimal `~/.bashrc` block.
+
+## Phase 3 — Run devbox setup (WSL)
+
+```bash
+devbox setup
+```
 
 The wizard will:
 
-1. Test HTTPS (`nodejs.org`) and offer **Corporate TLS / Zscaler** if it fails (export from Windows, cert file path, or skip)
-2. Run **`install.sh`** (sudo for system packages and CA trust)
-3. Optionally add a **`~/.bashrc`** block (`PATH`, fnm, `env.local`)
+1. Test HTTPS and configure **corporate TLS / Zscaler** if needed
+2. Install the **toolchain** (apt packages, fnm, Node, pnpm, turbo)
+3. Optionally add **fnm** to `~/.bashrc`
 4. Run **`devbox doctor`**
 
-Then reload your shell:
+TLS only:
 
 ```bash
-exec bash
-devbox doctor
+devbox setup tls
 ```
 
-### TLS problems only
+Manual fallback: [CORPORATE-TLS.md](CORPORATE-TLS.md).
+
+## Phase 4 — First application repo (no devbox required)
 
 ```bash
-cd ~/devbox
-bash bin/devbox setup tls
-```
-
-If the wizard cannot reach Windows (no WSL interop), see [CORPORATE-TLS.md](CORPORATE-TLS.md) for manual export on the host.
-
-## Phase 3 — First application repo (no devbox required)
-
-```bash
-mkdir -p ~/code
 cd ~/code
 git clone https://github.yourcompany.com/team/your-app.git
 cd your-app
@@ -98,19 +96,19 @@ pnpm dev
 
 ```bash
 devbox list
-devbox repo your-app          # cd + optional profile env
-devbox doctor                 # when something breaks
-devbox                          # interactive menu
+devbox repo your-app
+devbox doctor
+devbox                    # interactive menu
 ```
 
 ## Common mistakes
 
 | Mistake | Fix |
 |---------|-----|
+| Skip `install.sh` and run `devbox setup` from clone path only | Run `bash install.sh` first so `devbox` is on PATH |
 | Clone repos under `C:\` or `/mnt/c/...` | Use `~/code` in WSL |
 | Run `pnpm` in PowerShell | Use WSL bash only |
-| Run `install.sh` before TLS on Zscaler networks | Use `devbox setup` or `devbox setup tls` first |
-| Run `devbox` before setup completes | Use `bash ~/devbox/bin/devbox setup` |
+| Run toolchain before TLS on Zscaler networks | Use `devbox setup` (TLS runs first) or `devbox setup tls` |
 | Expect devbox inside every repo | Only clone devbox once on the machine |
 
 ## Getting help

@@ -72,4 +72,4 @@ fi
 devbox_write_ca_to_env_local "$DEST_CERT" || die "could not update config/env.local"
 log "updated $(devbox_env_local)"
 
-log "done — run: devbox setup tls   or: bash install.sh"
+log "done — run: devbox setup tls   (after: bash install.sh)"

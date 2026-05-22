@@ -157,26 +157,26 @@ devbox_setup_wizard() {
     fi
   fi
 
-  printf '\n── Step 2: Toolchain (install.sh) ──\n'
+  printf '\n── Step 2: Toolchain (Node, pnpm, turbo) ──\n'
   if command -v node >/dev/null 2>&1 && command -v pnpm >/dev/null 2>&1; then
     printf '  node: %s\n' "$(node -v 2>/dev/null || echo missing)"
     printf '  pnpm: %s\n' "$(pnpm -v 2>/dev/null || echo missing)"
-    if devbox_prompt_yn "Re-run install.sh to refresh pinned versions?" n; then
-      bash "$DEVBOX_ROOT/install.sh"
+    if devbox_prompt_yn "Re-run toolchain install to refresh pinned versions?" n; then
+      bash "$DEVBOX_ROOT/scripts/install-toolchain.sh"
     fi
   else
-    if devbox_prompt_yn "Run install.sh now? (fnm, Node, pnpm, turbo)" y; then
-      bash "$DEVBOX_ROOT/install.sh"
+    if devbox_prompt_yn "Install toolchain now? (apt packages, fnm, Node, pnpm, turbo)" y; then
+      bash "$DEVBOX_ROOT/scripts/install-toolchain.sh"
     else
-      warn "skipped install.sh — run manually: bash ~/devbox/install.sh"
+      warn "skipped toolchain — run: devbox setup"
     fi
   fi
 
-  printf '\n── Step 3: Shell convenience ──\n'
-  if grep -qF '# devbox' "$HOME/.bashrc" 2>/dev/null; then
-    printf '  ~/.bashrc already has devbox block\n'
-  elif devbox_prompt_yn "Add devbox to ~/.bashrc (PATH, fnm, env.local)?" y; then
-    DEVBOX_PATCH_SHELL=1 bash "$DEVBOX_ROOT/install.sh"
+  printf '\n── Step 3: Shell (fnm in ~/.bashrc) ──\n'
+  if grep -q 'fnm env' "$HOME/.bashrc" 2>/dev/null; then
+    printf '  ~/.bashrc already configures fnm\n'
+  elif devbox_prompt_yn "Add fnm to ~/.bashrc?" y; then
+    DEVBOX_PATCH_SHELL=1 bash "$DEVBOX_ROOT/scripts/install-toolchain.sh"
   fi
 
   printf '\n── Step 4: Health check ──\n'
@@ -192,7 +192,7 @@ devbox_interactive_menu() {
   choice="$(devbox_prompt_choice "1" \
     "  1) Setup wizard (new machine)
   2) Corporate TLS / Zscaler
-  3) Run install.sh (toolchain)
+  3) Install toolchain only
   4) doctor
   5) list repos in ~/code
   6) help
@@ -201,7 +201,7 @@ devbox_interactive_menu() {
   case "$choice" in
     1) devbox_setup_wizard ;;
     2) devbox_setup_tls_interactive ;;
-    3) bash "$DEVBOX_ROOT/install.sh" ;;
+    3) bash "$DEVBOX_ROOT/scripts/install-toolchain.sh" ;;
     4) cmd_doctor ;;
     5) cmd_list ;;
     6) usage ;;

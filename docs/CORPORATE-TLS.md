@@ -5,20 +5,24 @@ WSL Ubuntu does **not** automatically trust certificates installed on Windows. U
 - `unable to get local issuer certificate`
 - `can't get remote versions file: error sending request for url`
 
-`install.sh` installs the CA **before** downloading fnm or Node when `DEVBOX_CA_CERT_FILE` is set in `config/env.local`.
+`devbox setup` configures TLS **before** installing the toolchain.
 
-## Recommended order (interactive)
-
-From your devbox clone (use `bin/devbox` until `devbox` is on PATH):
+## Recommended order
 
 ```bash
 cd ~/devbox
-bash bin/devbox setup       # TLS + install.sh + optional shell (preferred)
-# or TLS only:
-bash bin/devbox setup tls
+bash install.sh          # devbox CLI on PATH
+exec bash
+devbox setup             # TLS first, then toolchain
 ```
 
-After setup: `devbox setup tls` and `devbox doctor` work from any directory.
+TLS only:
+
+```bash
+devbox setup tls
+```
+
+After `install.sh`, use `devbox` (not `bash bin/devbox`).
 
 Or manually:
 
@@ -27,41 +31,34 @@ Or manually:
 # 2. Verify curl
 curl -fsSL https://nodejs.org/dist/index.json | head -c 80
 
-# 3. Run bootstrap
-bash install.sh
+# 3. Run toolchain
+devbox setup
 ```
 
 ## Method 1 — sync from Windows (WSL interop)
 
-Requires: WSL2, Zscaler on Windows, `powershell.exe` available from WSL (`/mnt/c/Windows/...`).
+Requires: WSL2, Zscaler on Windows, `powershell.exe` available from WSL.
 
 ```bash
 cd ~/devbox
 bash scripts/sync-zscaler-ca.sh
-bash install.sh
+devbox setup tls    # apply CA + verify
 ```
-
-This runs `scripts/windows/Export-ZscalerCa.ps1` on the **host**, writes `config/zscaler-root.cer`, and sets `config/env.local`.
 
 ## Method 2 — Export on Windows, copy to WSL
 
-Use when sync cannot run from WSL (no interop) or you prefer manual control.
-
-**Windows PowerShell** (repo on Windows filesystem):
+**Windows PowerShell:**
 
 ```powershell
 cd C:\Users\<You>\devbox
 .\scripts\windows\Export-ZscalerCa.ps1
-# Output: %USERPROFILE%\.devbox\certs\zscaler-root.cer
 ```
 
 **WSL:**
 
 ```bash
 cp /mnt/c/Users/<You>/.devbox/certs/zscaler-root.cer ~/devbox/config/zscaler-root.cer
-printf '%s\n' 'export DEVBOX_CA_CERT_FILE=$HOME/devbox/config/zscaler-root.cer' >> ~/devbox/config/env.local
-chmod 600 ~/devbox/config/env.local
-bash ~/devbox/install.sh
+devbox setup tls
 ```
 
 ## Method 3 — IT-provided certificate
@@ -71,10 +68,12 @@ cp /path/to/company-root.pem ~/devbox/config/company-root.pem
 cp config/env.example config/env.local
 # Set: export DEVBOX_CA_CERT_FILE=$HOME/devbox/config/company-root.pem
 chmod 600 config/env.local
-bash install.sh
+devbox setup tls
 ```
 
-## What install.sh does
+## What the toolchain install does
+
+When `DEVBOX_CA_CERT_FILE` is set, `scripts/install-toolchain.sh`:
 
 1. Copies the cert to `/usr/local/share/ca-certificates/`
 2. Runs `update-ca-certificates`
@@ -88,7 +87,7 @@ bash install.sh
 
 ## Proxy
 
-If your company requires an HTTP proxy, set in `config/env.local` **before** `install.sh`:
+If your company requires an HTTP proxy, set in `config/env.local` **before** `devbox setup`:
 
 ```bash
 export HTTP_PROXY=http://proxy.company.com:8080

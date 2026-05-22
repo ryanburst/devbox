@@ -6,10 +6,10 @@
 
 | devbox is | devbox is not |
 |-----------|----------------|
-| Machine setup automation (`install.sh`) | A dependency inside application repos |
+| Machine setup (`install.sh` + `devbox setup`) | A dependency inside application repos |
 | Pinned Node / pnpm / turbo on WSL | A replacement for each repo’s `package.json` scripts |
 | `~/code` + TLS conventions | A Docker-first dev container on `C:\` |
-| Optional CLI (`devbox doctor`, `devbox repo`) | Required for `pnpm dev` to work |
+| Optional CLI helpers (`devbox doctor`, `devbox repo`) | Required for `pnpm dev` to work |
 
 **After bootstrap**, daily work looks like any normal monorepo:
 
@@ -42,19 +42,16 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 Full steps: **[docs/ONBOARDING.md](docs/ONBOARDING.md)**
 
 1. **Windows:** `wsl --install -d Ubuntu` → restart → `wsl` (create Linux user)
-2. **WSL — clone devbox and run the setup wizard** (TLS, packages, Node, pnpm — one flow):
+2. **WSL — clone devbox, install CLI, run setup:**
 
 ```bash
 git clone https://github.com/ryanburst/devbox.git ~/devbox
 cd ~/devbox
-bash bin/devbox setup
+bash install.sh          # installs devbox CLI to ~/.local/bin
 exec bash
+devbox setup             # TLS, Node, pnpm, turbo (interactive wizard)
 devbox doctor
 ```
-
-The wizard handles corporate TLS / Zscaler when HTTPS fails, then runs `install.sh` (includes `apt` packages). Use `bash bin/devbox setup` before `devbox` is on your PATH.
-
-TLS only: `bash bin/devbox setup tls` — manual fallback: [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md)
 
 3. **Any project** (devbox not required in the repo):
 
@@ -66,19 +63,26 @@ pnpm install
 pnpm dev
 ```
 
+| Step | What it does |
+|------|----------------|
+| `bash install.sh` | CLI on PATH, `~/code`, minimal `~/.bashrc` |
+| `devbox setup` | Corporate TLS, toolchain, optional fnm in shell |
+
+TLS only: `devbox setup tls` — manual fallback: [docs/CORPORATE-TLS.md](docs/CORPORATE-TLS.md)
+
 ## devbox CLI
 
-**Not** required for application builds. Use it for machine setup and troubleshooting.
+**Not** required for application builds.
 
 ```bash
 devbox              # interactive menu (TTY)
-devbox setup        # wizard: TLS → install.sh → optional ~/.bashrc
+devbox setup        # wizard: TLS → toolchain → optional fnm in ~/.bashrc
 devbox setup tls    # corporate CA / Zscaler only
 ```
 
 | Command | Purpose |
 |---------|---------|
-| `devbox setup` | Guided wizard (TLS, toolchain, `~/.bashrc`) |
+| `devbox setup` | Full machine setup (TLS + Node/pnpm/turbo) |
 | `devbox setup tls` | Corporate CA / Zscaler only |
 | `devbox doctor` | Verify WSL toolchain, paths, HTTPS, ownership |
 | `devbox list` | List directories in `~/code` |
@@ -101,7 +105,7 @@ Clone **only** under the WSL Linux home — not Windows drives:
 /mnt/c/Users/...   # no — slow
 ```
 
-pnpm store: `~/.pnpm-store` (configured by `install.sh`)
+pnpm store: `~/.pnpm-store` (configured by `devbox setup`)
 
 ## Docker (optional services)
 
@@ -146,4 +150,4 @@ Security: [docs/SECURITY.md](docs/SECURITY.md)
 
 ## Summary
 
-devbox prepares the **laptop once**; teams ship normal repos. Use WSL + `~/code` for speed and policy compliance; keep Windows as a thin launcher.
+devbox prepares the **laptop once** (`install.sh` then `devbox setup`); teams ship normal repos. Use WSL + `~/code` for speed and policy compliance; keep Windows as a thin launcher.

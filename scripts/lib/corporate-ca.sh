@@ -1,4 +1,4 @@
-# Shared corporate TLS helpers (sourced by install.sh, sync-zscaler-ca.sh, devbox CLI).
+# Shared corporate TLS helpers (sourced by install-toolchain.sh, sync-zscaler-ca.sh, devbox CLI).
 # Expects DEVBOX_ROOT to be set.
 
 devbox_env_local() {

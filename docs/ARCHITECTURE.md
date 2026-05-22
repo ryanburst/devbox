@@ -30,7 +30,7 @@ Application repos **do not need** devbox as a dependency. No `devbox` package in
                            │  wsl
 ┌──────────────────────────▼──────────────────────────────┐
 │  WSL2 Ubuntu (primary development runtime)               │
-│  • fnm + Node + pnpm + turbo (from devbox install.sh)    │
+│  • fnm + Node + pnpm + turbo (from devbox setup / install-toolchain) │
 │  • ~/code — all git clones                               │
 │  • ~/.pnpm-store — fast package cache                    │
 │  • Corporate CA in system trust (for curl, fnm, npm)     │
@@ -39,11 +39,20 @@ Application repos **do not need** devbox as a dependency. No `devbox` package in
 
 ## What devbox installs (once per machine)
 
+**`bash install.sh`** (CLI only):
+
+- `devbox` command on `PATH` (`~/.local/bin`)
+- `~/code` workspace directory
+- Minimal `~/.bashrc` block (`DEVBOX_ROOT`, PATH)
+- Optional: `curl` via apt if missing (for `devbox setup`)
+
+**`devbox setup`** (toolchain + TLS):
+
 - System packages (`curl`, `git`, `build-essential`, …)
+- Corporate CA trust (when configured)
 - fnm + pinned Node LTS
 - Global `pnpm` and `turbo` (pinned)
-- `~/code` workspace directory
-- Optional: `devbox` CLI on `PATH`, `~/.bashrc` snippet
+- Optional: fnm in `~/.bashrc`
 
 ## What devbox does *not* require for daily work
 
@@ -82,7 +91,7 @@ Docker remains **optional** for infrastructure only (Postgres, Redis, etc.) via 
 
 Zscaler installs roots on **Windows**. WSL has a **separate** trust store — you must copy/install the CA into Ubuntu **before** `fnm install` / `npm` downloads succeed.
 
-Preferred: **`bash bin/devbox setup`** (wizard runs TLS before `install.sh`) or **`bash bin/devbox setup tls`**.
+Preferred: **`bash install.sh`** then **`devbox setup`** (wizard runs TLS before toolchain).
 
 Other paths:
 
@@ -96,7 +105,8 @@ See [CORPORATE-TLS.md](CORPORATE-TLS.md).
 
 | Path | Role |
 |------|------|
-| `install.sh` | Machine bootstrap (run once per WSL distro, re-run to upgrade tooling) |
+| `install.sh` | Install devbox CLI + `~/code` (run once after clone) |
+| `scripts/install-toolchain.sh` | Node/pnpm/turbo (run via `devbox setup`, or `install.sh --toolchain`) |
 | `config/versions.sh` | Pinned fnm / pnpm / turbo / Node |
 | `config/env.local` | Machine-specific proxy, CA path (gitignored) |
 | `bin/devbox` | Optional CLI |

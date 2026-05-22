@@ -4,7 +4,7 @@ devbox is a **machine bootstrap** repository, not a runtime dependency of applic
 
 ## Threat model
 
-- **Install time:** Developer runs `bash install.sh` from a trusted clone of this repo on their WSL distro.
+- **Install time:** Developer runs `bash install.sh` (CLI), then `devbox setup` (toolchain) from a trusted clone.
 - **Daily use (typical):** Developer runs `pnpm` / repo scripts in `~/code` without invoking devbox.
 - **Optional CLI:** `devbox repo` may source trusted profile/hook files — see below.
 
@@ -20,10 +20,10 @@ devbox is a **machine bootstrap** repository, not a runtime dependency of applic
 
 | Control | Location |
 |---------|----------|
-| Pinned fnm release + SHA-256 verify | `config/versions.sh`, `install.sh` |
-| Pinned `pnpm` / `turbo` versions | `config/versions.sh`, `install.sh` |
-| Corporate CA before HTTPS downloads | `install.sh` (`configure_corporate_ca` before `fnm install`) |
-| No `curl \| bash` installer | `install.sh` |
+| Pinned fnm release + SHA-256 verify | `config/versions.sh`, `scripts/install-toolchain.sh` |
+| Pinned `pnpm` / `turbo` versions | `config/versions.sh`, `scripts/install-toolchain.sh` |
+| Corporate CA before HTTPS downloads | `install-toolchain.sh` (`configure_corporate_ca` before `fnm install`) |
+| No `curl \| bash` installer | `install-toolchain.sh` |
 | No `npm strict-ssl false` | use `DEVBOX_CA_CERT_FILE` |
 | Repo path canonicalization | `bin/devbox` `resolve_repo_dir` |
 | Opt-in `.devbox/hooks.sh` | `--trust-hooks` or `DEVBOX_TRUST_HOOKS=1` |
@@ -56,4 +56,4 @@ Prerequisites: Zscaler on Windows; WSL interop. Alternative: manual CA file from
 
 1. Edit `config/versions.sh`.
 2. For fnm bumps, copy SHA-256 from the [GitHub release](https://github.com/Schniz/fnm/releases) asset `digest` field.
-3. Re-run `bash install.sh` and `devbox doctor`.
+3. Re-run `devbox setup` and `devbox doctor`.

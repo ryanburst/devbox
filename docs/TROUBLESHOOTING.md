@@ -4,9 +4,9 @@
 
 Corporate TLS inspection (common with Zscaler). The root CA is not in WSL’s trust store yet.
 
-1. Run `bash ~/devbox/bin/devbox setup tls` (or `devbox setup tls` if on PATH)
+1. Run `devbox setup tls` (after `bash install.sh`)
 2. Verify: `curl -fsSL https://nodejs.org/dist/index.json | head -c 80`
-3. Re-run `devbox setup` or `bash ~/devbox/install.sh`
+3. Re-run `devbox setup`
 
 ## `can't get remote versions file` (fnm)
 
@@ -17,7 +17,7 @@ export SSL_CERT_FILE=$HOME/devbox/config/zscaler-root.cer   # if you have the fi
 fnm ls-remote | head
 ```
 
-Fix CA in WSL: `devbox setup tls`, then `devbox setup` or `bash install.sh`.
+Fix CA in WSL: `devbox setup tls`, then `devbox setup`.
 
 ## `pnpm install` very slow
 
@@ -52,9 +52,15 @@ Windows policy does not apply to Linux bash in WSL.
 ## `devbox` command not found
 
 ```bash
-export PATH="$HOME/.local/bin:$HOME/.local/share/fnm:$PATH"
-eval "$(fnm env --shell bash)"
-# Or re-run install with DEVBOX_PATCH_SHELL=1
+cd ~/devbox
+bash install.sh
+exec bash
+```
+
+Or temporarily:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
 ## Git clone auth fails
@@ -70,5 +76,5 @@ devbox does not run your app in Docker. Use `docker compose` only for services (
 Safe to run again to upgrade pinned tooling:
 
 ```bash
-cd ~/devbox && git pull && bash install.sh
+cd ~/devbox && git pull && devbox setup
 ```
