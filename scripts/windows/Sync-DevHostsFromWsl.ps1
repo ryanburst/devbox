@@ -3,7 +3,7 @@
 .SYNOPSIS
   Prepare or apply Windows hosts sync from WSL-exported lines.
 
-  Uses USERPROFILE\AppData\Local\devbox (not $env:LOCALAPPDATA) — corporate
+  Uses USERPROFILE\AppData\Local\devbox (not $env:LOCALAPPDATA) - corporate
   profiles often break LOCALAPPDATA (e.g. COMPANY_username_$).
 #>
 param(
@@ -43,7 +43,7 @@ function Get-DevboxHostsDir {
   if ($local) {
     return Join-Path $local 'devbox'
   }
-  throw 'Could not resolve devbox hosts directory — pass -DevboxDir from WSL'
+  throw 'Could not resolve devbox hosts directory - pass -DevboxDir from WSL'
 }
 
 function Write-CorporateElevationInstructions {
@@ -57,7 +57,7 @@ function Write-CorporateElevationInstructions {
   Write-Host 'Do NOT use $env:LOCALAPPDATA on corporate PCs (often wrong, e.g. COMPANY_user_$).'
   Write-Host 'Use this exact path:'
   Write-Host ''
-  Write-Host '  1. Start → PowerShell → Run with elevated access'
+  Write-Host '  1. Start - PowerShell - Run with elevated access'
   Write-Host ''
   Write-Host '  2. Paste:'
   Write-Host "     cd `"$DevboxDir`""
@@ -153,7 +153,7 @@ Get-Content (Join-Path $devboxDir 'hosts-lines.txt') | ForEach-Object { Write-Ho
 
 if ($env:DEVBOX_HOSTS_USE_RUNAS -eq '1') {
   Write-Host ''
-  Write-Host 'DEVBOX_HOSTS_USE_RUNAS=1 — opening classic UAC elevation...' -ForegroundColor Yellow
+  Write-Host 'DEVBOX_HOSTS_USE_RUNAS=1 - opening classic UAC elevation...' -ForegroundColor Yellow
   $argList = @(
     '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $devboxDir 'apply-dev-hosts.cmd')
   )

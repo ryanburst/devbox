@@ -60,7 +60,7 @@ if ! extract_dev_host_lines | sort -u >"$LINES_FILE"; then
   die "could not read /etc/hosts"
 fi
 if [[ ! -s "$LINES_FILE" ]]; then
-  die "no dev host lines in /etc/hosts — run repo setup first (e.g. just setup)"
+  die "no dev host lines in /etc/hosts - run repo setup first (e.g. just setup)"
 fi
 
 log "entries to sync:"
@@ -78,8 +78,8 @@ log "target folder: $DEVBOX_WIN"
 
 DEVBOX_WIN_W="$(wslpath -w "$DEVBOX_WIN" 2>/dev/null || true)"
 log ""
-log "On Windows (do NOT use \$env:LOCALAPPDATA — often wrong on corporate PCs):"
-log "  Start → PowerShell → Run with elevated access"
+log "On Windows (do NOT use \$env:LOCALAPPDATA - often wrong on corporate PCs):"
+log "  Start - PowerShell - Run with elevated access"
 if [[ -n "$DEVBOX_WIN_W" ]]; then
   log "  cd \"$DEVBOX_WIN_W\""
 else
