@@ -3,8 +3,8 @@
 .SYNOPSIS
   Apply dev host lines to the Windows hosts file. Must run in an elevated shell.
 
-  Corporate laptops: use your company's "Run with elevated access" on PowerShell,
-  then run apply-dev-hosts.ps1 from %LOCALAPPDATA%\devbox\ (created by devbox setup hosts).
+  Corporate laptops: use Run with elevated access on PowerShell,
+  then run apply-dev-hosts.ps1 from USERPROFILE\AppData\Local\devbox (devbox setup hosts).
 #>
 param(
   [Parameter(Mandatory = $true)]
@@ -54,9 +54,9 @@ if (-not (Test-Admin)) {
   Write-Host ''
   Write-Host 'This shell is not elevated.' -ForegroundColor Red
   Write-Host ''
-  Write-Host 'On corporate Windows, do NOT use "Run as administrator" (domain admin password).'
+  Write-Host 'On corporate Windows, do NOT use Run as administrator (domain admin password).'
   Write-Host 'Instead:'
-  Write-Host '  1. Open PowerShell via your company menu: "Run with elevated access"'
+  Write-Host '  1. Open PowerShell via your company menu: Run with elevated access'
   Write-Host '  2. cd $env:USERPROFILE\AppData\Local\devbox'
   Write-Host '     (or cd to the path in devbox-hosts-dir.txt)'
   Write-Host '  3. powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1'
@@ -102,4 +102,4 @@ if ($DryRun) {
 Set-Content -Path $WinHosts -Value $newContent -Encoding ascii
 Write-Host "`nUpdated: $WinHosts" -ForegroundColor Green
 Write-Host 'Optional: ipconfig /flushdns'
-Write-Host 'Test in browser: http://<name>.local:<port>'
+Write-Host 'Test in browser: http://your-hostname.local:port'

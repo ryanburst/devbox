@@ -1,5 +1,5 @@
-# devbox - launcher for corporate "Run with elevated access" (ASCII-only file)
-# Copied to %LOCALAPPDATA%\devbox\apply-dev-hosts.ps1 by devbox setup hosts
+# devbox - launcher for corporate Run with elevated access (ASCII-only file)
+# Copied to USERPROFILE\AppData\Local\devbox\apply-dev-hosts.ps1 by devbox setup hosts
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $logFile = Join-Path $here 'apply-dev-hosts.log'
