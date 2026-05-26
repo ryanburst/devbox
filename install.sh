@@ -37,7 +37,10 @@ install_devbox_cli() {
   mkdir -p "$HOME/.local/bin"
   ln -sf "$DEVBOX_ROOT/bin/devbox" "$HOME/.local/bin/devbox"
   chmod 755 "$DEVBOX_ROOT/bin/devbox"
-  log "devbox CLI linked to ~/.local/bin/devbox"
+  if [[ ! -f "$DEVBOX_ROOT/scripts/lib/corporate-ca.sh" ]]; then
+    die "incomplete devbox clone at $DEVBOX_ROOT (missing scripts/lib/corporate-ca.sh)"
+  fi
+  log "devbox CLI linked to ~/.local/bin/devbox -> $DEVBOX_ROOT/bin/devbox"
 }
 
 ensure_workspace() {

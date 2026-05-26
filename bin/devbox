@@ -6,34 +6,54 @@ die() { printf 'devbox: %s\n' "$*" >&2; exit 1; }
 warn() { printf 'devbox warning: %s\n' "$*" >&2; }
 
 _devbox_script_path() {
-  local script="${BASH_SOURCE[0]}"
-  if command -v readlink >/dev/null 2>&1; then
-    readlink -f "$script" 2>/dev/null && return 0
-  fi
-  if command -v realpath >/dev/null 2>&1; then
-    realpath "$script" 2>/dev/null && return 0
-  fi
+  local script dir
+  script="${BASH_SOURCE[0]}"
+  # Portable symlink resolution (readlink -f is not available on all systems).
+  while [[ -h "$script" ]]; do
+    dir="$(cd -P "$(dirname "$script")" && pwd)"
+    script="$(readlink "$script")"
+    [[ "$script" != /* ]] && script="$dir/$script"
+  done
+  script="$(cd -P "$(dirname "$script")" && pwd)/$(basename "$script")"
   printf '%s' "$script"
 }
 
 _devbox_script_root() {
   local script root
   script="$(_devbox_script_path)"
-  root="$(cd "$(dirname "$script")/.." && pwd)"
+  root="$(cd -P "$(dirname "$script")/.." && pwd)"
   printf '%s' "$root"
 }
 
+devbox_root_looks_valid() {
+  [[ -n "${1:-}" && -f "$1/scripts/lib/corporate-ca.sh" ]]
+}
+
 resolve_devbox_root() {
-  local default_root
+  local default_root candidate
   default_root="$(_devbox_script_root)"
-  if [[ -n "${DEVBOX_ROOT:-}" && "${DEVBOX_ALLOW_OVERRIDE:-}" == "1" ]]; then
+  if devbox_root_looks_valid "$default_root"; then
+    printf '%s' "$default_root"
+    return 0
+  fi
+  if [[ -n "${DEVBOX_ROOT:-}" && "${DEVBOX_ALLOW_OVERRIDE:-}" == "1" ]] \
+    && devbox_root_looks_valid "$DEVBOX_ROOT"; then
     printf '%s' "$DEVBOX_ROOT"
     return 0
   fi
   if [[ -n "${DEVBOX_ROOT:-}" && "$DEVBOX_ROOT" != "$default_root" ]]; then
-    warn "ignoring DEVBOX_ROOT=$DEVBOX_ROOT; using $default_root"
+    warn "ignoring DEVBOX_ROOT=$DEVBOX_ROOT"
   fi
-  printf '%s' "$default_root"
+  for candidate in "$HOME/devbox" "$HOME/Devbox/devbox"; do
+    if devbox_root_looks_valid "$candidate"; then
+      warn "resolved devbox root to $candidate (check ~/.local/bin/devbox symlink)"
+      printf '%s' "$candidate"
+      return 0
+    fi
+  done
+  die "cannot find devbox repo (missing scripts/lib/corporate-ca.sh). Tried: $default_root
+Fix: cd ~/devbox && git pull && bash install.sh && exec bash
+Or run: bash ~/devbox/bin/devbox setup tls"
 }
 
 resolve_code_dir() {
@@ -49,6 +69,8 @@ resolve_code_dir() {
 }
 
 DEVBOX_ROOT="$(resolve_devbox_root)"
+devbox_root_looks_valid "$DEVBOX_ROOT" \
+  || die "internal error: invalid DEVBOX_ROOT=$DEVBOX_ROOT"
 CODE_DIR="$(resolve_code_dir)"
 PROFILES_DIR="$DEVBOX_ROOT/profiles"
 

@@ -83,19 +83,34 @@ cd ~/devbox && bash install.sh && devbox setup
 
 Details: [RESET.md](RESET.md)
 
-## `.local/scripts/lib/corporate-ca.sh: No such file`
+## `corporate-ca.sh: No such file` / `.local/scripts/lib/corporate-ca.sh`
 
-The `devbox` on PATH is a symlink under `~/.local/bin`. An older CLI resolved the repo as `~/.local` instead of `~/devbox`.
+`devbox` on PATH is a symlink at `~/.local/bin/devbox`. If root detection fails, devbox looks under `~/.local/scripts/...` instead of `~/devbox/scripts/...`.
+
+**Fix (have your friend run in WSL):**
 
 ```bash
 cd ~/devbox
 git pull
 bash install.sh
 exec bash
-devbox setup
+devbox setup tls
 ```
 
-Or once: `bash ~/devbox/bin/devbox setup`
+**Workaround without fixing PATH:**
+
+```bash
+cd ~/devbox
+git pull
+bash ~/devbox/bin/devbox setup tls
+```
+
+**Verify:**
+
+```bash
+readlink -f ~/.local/bin/devbox    # should end with .../devbox/bin/devbox
+ls ~/devbox/scripts/lib/corporate-ca.sh
+```
 
 ## `DEVBOX_ROOT override ignored`
 
