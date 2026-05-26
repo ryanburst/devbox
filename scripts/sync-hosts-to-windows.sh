@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sync dev hostnames from WSL /etc/hosts to Windows hosts (for Edge/Chrome on Windows).
-# Prepares %LOCALAPPDATA%\devbox\ for corporate "Run with elevated access" (no domain UAC).
+# Prepares %USERPROFILE%\AppData\Local\devbox (corporate LOCALAPPDATA is often wrong).
 set -euo pipefail
 
 DEVBOX_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -67,16 +67,24 @@ log "entries to sync:"
 sed 's/^/  /' "$LINES_FILE"
 
 LINES_FILE_WIN="$(powershell_win_path "$LINES_FILE")"
+DEVBOX_WIN_PS="$(powershell_win_path "$DEVBOX_WIN")"
+mkdir -p "$DEVBOX_WIN"
+
 log "preparing Windows hosts bundle (no domain-admin UAC)"
+log "target folder: $DEVBOX_WIN"
 
 "$PS_EXE" -NoProfile -ExecutionPolicy Bypass -File "$PS_FILE_WIN" \
-  -InputFile "$LINES_FILE_WIN" -PrepareOnly
+  -InputFile "$LINES_FILE_WIN" -DevboxDir "$DEVBOX_WIN_PS" -PrepareOnly
 
+DEVBOX_WIN_W="$(wslpath -w "$DEVBOX_WIN" 2>/dev/null || true)"
 log ""
-log "On Windows:"
+log "On Windows (do NOT use \$env:LOCALAPPDATA — often wrong on corporate PCs):"
 log "  Start → PowerShell → Run with elevated access"
-log "  cd \$env:LOCALAPPDATA\\devbox"
+if [[ -n "$DEVBOX_WIN_W" ]]; then
+  log "  cd \"$DEVBOX_WIN_W\""
+else
+  log "  cd \$env:USERPROFILE\\AppData\\Local\\devbox"
+fi
 log "  powershell -ExecutionPolicy Bypass -File .\\apply-dev-hosts.ps1"
-log "  (see START-HERE-hosts.txt in that folder — .cmd may lack elevation menu)"
-log "Folder: $(wslpath -w "$DEVBOX_WIN" 2>/dev/null || echo "%LOCALAPPDATA%\\devbox")"
+log "  (see START-HERE-hosts.txt in that folder)"
 log "Optional after success: ipconfig /flushdns"

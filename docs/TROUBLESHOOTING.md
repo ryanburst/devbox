@@ -173,7 +173,7 @@ grep '\.local' /etc/hosts
 devbox setup hosts    # run from WSL, not from elevated PowerShell
 ```
 
-Elevated PowerShell often has no `wsl` — use `devbox setup hosts` from Ubuntu, then on Windows run `%LOCALAPPDATA%\devbox\apply-dev-hosts.ps1` via **Run with elevated access** (not domain “Run as administrator”). See [HOSTS-WINDOWS.md](HOSTS-WINDOWS.md).
+Elevated PowerShell often has no `wsl` — use `devbox setup hosts` from Ubuntu, then `cd $env:USERPROFILE\AppData\Local\devbox` in elevated PowerShell (not `$env:LOCALAPPDATA` — corporate profiles often break that). See [HOSTS-WINDOWS.md](HOSTS-WINDOWS.md).
 
 See [HOSTS-WINDOWS.md](HOSTS-WINDOWS.md). Use `http://name.local:PORT` — the port is not part of the hosts file.
 

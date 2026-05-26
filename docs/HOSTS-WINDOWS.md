@@ -22,7 +22,7 @@ devbox setup hosts
 
 Run **`devbox setup hosts` from WSL** (normal Ubuntu terminal). Devbox prepares:
 
-`%LOCALAPPDATA%\devbox\apply-dev-hosts.ps1`
+`%USERPROFILE%\AppData\Local\devbox\` (not `%LOCALAPPDATA%` — often wrong on corporate PCs)
 
 ### Corporate elevation (no domain-admin password)
 
@@ -36,14 +36,20 @@ Many companies block **Run as administrator** (domain password) but allow **Run 
 4. In that window, paste:
 
 ```powershell
-cd $env:LOCALAPPDATA\devbox
+cd $env:USERPROFILE\AppData\Local\devbox
 powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1
+```
+
+Or use the exact path from WSL `devbox setup hosts` output, or:
+
+```powershell
+cd (Get-Content "$env:USERPROFILE\AppData\Local\devbox\devbox-hosts-dir.txt")
 ```
 
 5. Wait for **Success**, press Enter to close
 6. Optional: `ipconfig /flushdns`
 
-**Win+R** → `%LOCALAPPDATA%\devbox` opens the folder; read **`START-HERE-hosts.txt`** there.
+**Win+R** → `%USERPROFILE%\AppData\Local\devbox` opens the folder (avoid `%LOCALAPPDATA%` if it shows `COMPANY_username_$`).
 
 If a window flashes and closes, open **`apply-dev-hosts.log`** (often “not elevated” — you must start from step 2–3, not double-click a file).
 
