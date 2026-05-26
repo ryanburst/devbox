@@ -20,11 +20,22 @@ grep -E '\.local|127\.0\.0\.1' /etc/hosts | grep -v '127.0.0.1\s*localhost'
 devbox setup hosts
 ```
 
+Run **`devbox setup hosts` from WSL** (normal Ubuntu terminal), not from an elevated PowerShell window. Devbox reads `/etc/hosts` in WSL, writes a temp file on `C:\`, then opens **elevated** PowerShell that only edits the Windows hosts file — elevated PowerShell often **cannot** run `wsl`, so opening Admin PowerShell yourself and running `wsl` will fail.
+
 Or:
 
 ```bash
 bash ~/devbox/scripts/sync-hosts-to-windows.sh
 ```
+
+### Manual fallback (elevated Notepad)
+
+If UAC automation is blocked:
+
+1. In **WSL**: `grep '\.local' /etc/hosts`
+2. **Windows** → Notepad **Run as administrator** → open `C:\Windows\System32\drivers\etc\hosts`
+3. Paste the same `127.0.0.1 yourname.local` lines, save
+4. `ipconfig /flushdns` in Admin PowerShell
 
 Then in **PowerShell (Admin)** optional:
 

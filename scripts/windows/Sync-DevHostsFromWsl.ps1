@@ -1,20 +1,23 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Merge dev hostnames from WSL /etc/hosts into the Windows hosts file (Admin).
+  Merge dev hostnames into the Windows hosts file (Admin).
 
 .DESCRIPTION
-  Browsers on Windows read C:\Windows\System32\drivers\etc\hosts, not WSL /etc/hosts.
-  Copies lines from the WSL distro hosts file that look like local dev entries
-  (.local domains and custom 127.0.0.1 mappings), into a managed block.
+  Elevated PowerShell often cannot run wsl.exe. Run from WSL via sync-hosts-to-windows.sh,
+  which writes lines to a temp file and passes -InputFile so the admin session never calls WSL.
+
+.PARAMETER InputFile
+  Windows path to a text file with one hosts line per row (required when elevating).
 
 .PARAMETER Distro
-  WSL distribution name. Default: current distro from WSL_DISTRO_NAME env or Ubuntu.
+  WSL distro name — only used when -InputFile is omitted (non-elevated dev only).
 
 .PARAMETER DryRun
   Print what would change without writing.
 #>
 param(
+  [string]$InputFile,
   [string]$Distro = $env:WSL_DISTRO_NAME,
   [switch]$DryRun
 )
@@ -30,22 +33,7 @@ function Test-Admin {
   $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Get-WslHostsText {
-  param([string]$Name)
-  if (-not $Name) {
-    $Name = (wsl.exe -l -q 2>$null | Where-Object { $_ -match '\S' } | Select-Object -First 1)
-  }
-  if (-not $Name) {
-    throw 'Could not detect WSL distro. Pass -Distro Ubuntu (or your distro name).'
-  }
-  $text = wsl.exe -d $Name -e cat /etc/hosts 2>&1
-  if ($LASTEXITCODE -ne 0) {
-    throw "Failed to read /etc/hosts from WSL distro '$Name': $text"
-  }
-  return $text
-}
-
-function Get-DevHostLines {
+function Get-DevHostLinesFromText {
   param([string]$HostsText)
   $lines = @()
   foreach ($line in ($HostsText -split "`n")) {
@@ -58,6 +46,21 @@ function Get-DevHostLines {
     }
   }
   return $lines | Select-Object -Unique
+}
+
+function Get-WslHostsText {
+  param([string]$Name)
+  if (-not $Name) {
+    $Name = (wsl.exe -l -q 2>$null | Where-Object { $_ -match '\S' } | Select-Object -First 1)
+  }
+  if (-not $Name) {
+    throw 'Could not detect WSL distro. Run from WSL: devbox setup hosts'
+  }
+  $text = wsl.exe -d $Name -e cat /etc/hosts 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    throw "Failed to read /etc/hosts from WSL distro '$Name': $text"
+  }
+  return $text
 }
 
 function Remove-ManagedBlock {
@@ -73,33 +76,52 @@ function Remove-ManagedBlock {
 }
 
 if (-not (Test-Admin)) {
-  Write-Host 'Re-launching elevated (required to edit Windows hosts)...' -ForegroundColor Yellow
+  if (-not $InputFile) {
+    Write-Host 'Run from WSL: devbox setup hosts' -ForegroundColor Yellow
+    Write-Host '(Reads /etc/hosts in WSL, then elevates using a temp file — no wsl in Admin PowerShell.)'
+    exit 1
+  }
+  if (-not (Test-Path -LiteralPath $InputFile)) {
+    throw "Input file not found: $InputFile"
+  }
+  Write-Host 'Opening elevated PowerShell (Admin) to update Windows hosts...' -ForegroundColor Yellow
+  Write-Host 'Elevated window does not need WSL — it only reads the temp file.' -ForegroundColor DarkGray
   $argList = @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath,
+    '-InputFile', $InputFile
   )
-  if ($Distro) { $argList += @('-Distro', $Distro) }
   if ($DryRun) { $argList += '-DryRun' }
   Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $argList
   exit 0
 }
 
-$wslText = Get-WslHostsText -Name $Distro
-$devLines = Get-DevHostLines -HostsText $wslText
+if ($InputFile) {
+  if (-not (Test-Path -LiteralPath $InputFile)) {
+    throw "Input file not found: $InputFile"
+  }
+  $hostsText = Get-Content -LiteralPath $InputFile -Raw
+  $sourceNote = "file $InputFile"
+} else {
+  $hostsText = Get-WslHostsText -Name $Distro
+  $sourceNote = "WSL distro $Distro"
+}
+
+$devLines = Get-DevHostLinesFromText -HostsText $hostsText
 if ($devLines.Count -eq 0) {
-  Write-Host "No dev host lines found in WSL /etc/hosts (looked for .local and 127.0.0.1 entries)." -ForegroundColor Yellow
-  Write-Host 'Run your repo setup in WSL first (e.g. just setup), then retry.'
+  Write-Host 'No dev host lines found (.local or 127.0.0.1 entries).' -ForegroundColor Yellow
+  Write-Host 'Run your repo setup in WSL first (e.g. just setup), then: devbox setup hosts'
   exit 1
 }
 
-Write-Host "Distro: $Distro"
-Write-Host 'Dev host entries to sync to Windows:'
+Write-Host "Source: $sourceNote"
+Write-Host 'Dev host entries for Windows hosts:'
 $devLines | ForEach-Object { Write-Host "  $_" }
 
 $existing = Get-Content -Path $WinHosts -ErrorAction Stop
 $body = Remove-ManagedBlock -Content $existing
 $body.Add('')
 $body.Add($MarkerBegin)
-$body.Add("# Synced from WSL $Distro on $(Get-Date -Format 'yyyy-MM-dd HH:mm')")
+$body.Add("# Synced on $(Get-Date -Format 'yyyy-MM-dd HH:mm') from $sourceNote")
 foreach ($l in $devLines) { $body.Add($l) }
 $body.Add($MarkerEnd)
 $body.Add('')
@@ -114,5 +136,8 @@ if ($DryRun) {
 
 Set-Content -Path $WinHosts -Value $newContent -Encoding ascii
 Write-Host "`nUpdated Windows hosts: $WinHosts" -ForegroundColor Green
-Write-Host 'Flush DNS (optional): ipconfig /flushdns'
-Write-Host 'Test in browser: http://<your-host>.local:<port>  (port is not part of hosts file)'
+Write-Host 'Optional: ipconfig /flushdns'
+Write-Host 'Test: http://<hostname>.local:<port> in your Windows browser'
+if ($InputFile) {
+  Remove-Item -LiteralPath $InputFile -Force -ErrorAction SilentlyContinue
+}

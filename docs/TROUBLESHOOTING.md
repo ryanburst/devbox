@@ -170,8 +170,10 @@ Clone once from **Windows** (PowerShell in a folder on `C:\`), or use SSH keys i
 
 ```bash
 grep '\.local' /etc/hosts
-devbox setup hosts
+devbox setup hosts    # run from WSL, not from elevated PowerShell
 ```
+
+Elevated PowerShell often has no `wsl` — devbox passes host lines via a temp file instead. Do not open Admin PowerShell and run `wsl` yourself; use `devbox setup hosts` from Ubuntu.
 
 See [HOSTS-WINDOWS.md](HOSTS-WINDOWS.md). Use `http://name.local:PORT` — the port is not part of the hosts file.
 
