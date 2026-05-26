@@ -85,40 +85,46 @@ Details: [RESET.md](RESET.md)
 
 ## `corporate-ca.sh: No such file` / `.local/scripts/lib/corporate-ca.sh`
 
-`devbox` on PATH is a symlink at `~/.local/bin/devbox`. If root detection fails, devbox looks under `~/.local/scripts/...` instead of `~/devbox/scripts/...`.
+`devbox` on PATH is a symlink at `~/.local/bin/devbox`. If root detection fails, devbox looks under `~/.local/scripts/...` instead of your clone (e.g. `~/Development/devbox`).
 
-**Fix (have your friend run in WSL):**
+**Run setup in WSL Ubuntu, not Git Bash.** Paths like `/c/Users/...` mean Git Bash; TLS and toolchain need WSL.
+
+**Fix (WSL — adjust clone path if not `~/devbox`):**
 
 ```bash
-cd ~/devbox
+cd ~/Development/devbox   # or: cd /mnt/c/Users/YOU/Development/devbox
 git pull
 bash install.sh
 exec bash
 devbox setup tls
 ```
 
-**Workaround without fixing PATH:**
+**If you see** `ignoring DEVBOX_ROOT=.../Development/devbox; using .../.local` **you are on an old `bin/devbox`.** `git pull` and `bash install.sh` again. Current devbox uses shell `DEVBOX_ROOT` when the symlink is wrong.
+
+**Workaround:**
 
 ```bash
-cd ~/devbox
+bash "$HOME/Development/devbox/bin/devbox" setup tls
+```
+
+**Verify (WSL):**
+
+```bash
+echo "$DEVBOX_ROOT"
+readlink ~/.local/bin/devbox
+ls "$DEVBOX_ROOT/scripts/lib/corporate-ca.sh"
+```
+
+## `DEVBOX_ROOT override ignored` / wrong root under `.local`
+
+Usually a stale clone path in `~/.bashrc` **or** Git Bash symlink resolution. Update devbox, then from the **real clone directory**:
+
+```bash
+cd ~/Development/devbox
 git pull
-bash ~/devbox/bin/devbox setup tls
-```
-
-**Verify:**
-
-```bash
-readlink -f ~/.local/bin/devbox    # should end with .../devbox/bin/devbox
-ls ~/devbox/scripts/lib/corporate-ca.sh
-```
-
-## `DEVBOX_ROOT override ignored`
-
-Stale `DEVBOX_ROOT` in the shell (often from `~/.bashrc` after a re-clone). Fixed in current `bin/devbox`; update and run:
-
-```bash
-unset DEVBOX_ROOT
-devbox setup
+bash install.sh
+exec bash
+devbox doctor
 ```
 
 ## `devbox` command not found

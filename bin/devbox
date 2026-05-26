@@ -5,13 +5,23 @@ set -euo pipefail
 die() { printf 'devbox: %s\n' "$*" >&2; exit 1; }
 warn() { printf 'devbox warning: %s\n' "$*" >&2; }
 
+_devbox_normalize_path() {
+  local p="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -u "$p" 2>/dev/null && return 0
+  fi
+  printf '%s' "$p"
+}
+
 _devbox_script_path() {
   local script dir
   script="${BASH_SOURCE[0]}"
+  script="$(_devbox_normalize_path "$script")"
   # Portable symlink resolution (readlink -f is not available on all systems).
   while [[ -h "$script" ]]; do
     dir="$(cd -P "$(dirname "$script")" && pwd)"
     script="$(readlink "$script")"
+    script="$(_devbox_normalize_path "$script")"
     [[ "$script" != /* ]] && script="$dir/$script"
   done
   script="$(cd -P "$(dirname "$script")" && pwd)/$(basename "$script")"
@@ -30,30 +40,35 @@ devbox_root_looks_valid() {
 }
 
 resolve_devbox_root() {
-  local default_root candidate
-  default_root="$(_devbox_script_root)"
-  if devbox_root_looks_valid "$default_root"; then
-    printf '%s' "$default_root"
+  local script_root candidate
+  script_root="$(_devbox_script_root)"
+  if devbox_root_looks_valid "$script_root"; then
+    if [[ -n "${DEVBOX_ROOT:-}" && "$DEVBOX_ROOT" != "$script_root" ]] \
+      && devbox_root_looks_valid "$DEVBOX_ROOT"; then
+      warn "shell DEVBOX_ROOT=$DEVBOX_ROOT differs from symlink ($script_root); using symlink"
+    fi
+    printf '%s' "$script_root"
     return 0
   fi
-  if [[ -n "${DEVBOX_ROOT:-}" && "${DEVBOX_ALLOW_OVERRIDE:-}" == "1" ]] \
-    && devbox_root_looks_valid "$DEVBOX_ROOT"; then
+  if [[ -n "${DEVBOX_ROOT:-}" ]] && devbox_root_looks_valid "$DEVBOX_ROOT"; then
+    warn "using DEVBOX_ROOT from shell ($DEVBOX_ROOT); ~/.local/bin/devbox symlink is wrong — run: bash install.sh from your clone"
     printf '%s' "$DEVBOX_ROOT"
     return 0
   fi
-  if [[ -n "${DEVBOX_ROOT:-}" && "$DEVBOX_ROOT" != "$default_root" ]]; then
-    warn "ignoring DEVBOX_ROOT=$DEVBOX_ROOT"
-  fi
-  for candidate in "$HOME/devbox" "$HOME/Devbox/devbox"; do
+  for candidate in \
+    "$HOME/Development/devbox" \
+    "$HOME/devbox" \
+    "$HOME/Devbox/devbox"; do
     if devbox_root_looks_valid "$candidate"; then
-      warn "resolved devbox root to $candidate (check ~/.local/bin/devbox symlink)"
+      warn "resolved devbox root to $candidate (re-run bash install.sh from that directory)"
       printf '%s' "$candidate"
       return 0
     fi
   done
-  die "cannot find devbox repo (missing scripts/lib/corporate-ca.sh). Tried: $default_root
-Fix: cd ~/devbox && git pull && bash install.sh && exec bash
-Or run: bash ~/devbox/bin/devbox setup tls"
+  die "cannot find devbox repo (missing scripts/lib/corporate-ca.sh). Symlink resolved to: $script_root
+Fix: cd \"\$HOME/Development/devbox\"  # or wherever you cloned
+     git pull && bash install.sh && exec bash
+Or:  bash \"\$HOME/Development/devbox/bin/devbox\" setup tls"
 }
 
 resolve_code_dir() {

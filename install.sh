@@ -70,6 +70,8 @@ EOF
 install_cli() {
   if grep -qi microsoft /proc/version 2>/dev/null; then
     log "WSL detected"
+  elif [[ "$(uname -s 2>/dev/null || true)" =~ ^(MINGW|MSYS) ]]; then
+    warn "Git Bash detected — install the CLI here if you want, but run devbox setup inside WSL Ubuntu (wsl -d Ubuntu)"
   else
     warn "not running under WSL — continuing anyway"
   fi
