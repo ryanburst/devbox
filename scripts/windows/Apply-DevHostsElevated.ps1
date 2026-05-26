@@ -38,16 +38,17 @@ function Get-DevHostLinesFromText {
   return $lines | Select-Object -Unique
 }
 
-function Remove-ManagedBlock {
+function Get-HostsWithoutManagedBlock {
   param([string[]]$Content)
-  $out = New-Object System.Collections.Generic.List[string]
+  # Return a regular array (Get-Content / function return can be fixed-size; .Add fails).
+  $kept = @()
   $skip = $false
   foreach ($line in $Content) {
     if ($line -eq $MarkerBegin) { $skip = $true; continue }
     if ($line -eq $MarkerEnd) { $skip = $false; continue }
-    if (-not $skip) { $out.Add($line) }
+    if (-not $skip) { $kept += $line }
   }
-  return $out
+  return $kept
 }
 
 if (-not (Test-Admin)) {
@@ -82,16 +83,18 @@ if ($devLines.Count -eq 0) {
 Write-Host 'Applying to Windows hosts:'
 $devLines | ForEach-Object { Write-Host "  $_" }
 
-$existing = Get-Content -Path $WinHosts -ErrorAction Stop
-$body = Remove-ManagedBlock -Content $existing
-$body.Add('')
-$body.Add($MarkerBegin)
-$body.Add("# Applied $(Get-Date -Format 'yyyy-MM-dd HH:mm') from devbox")
-foreach ($l in $devLines) { $body.Add($l) }
-$body.Add($MarkerEnd)
-$body.Add('')
-
-$newContent = ($body -join "`r`n").TrimEnd() + "`r`n"
+$existing = @(Get-Content -Path $WinHosts -ErrorAction Stop)
+$kept = Get-HostsWithoutManagedBlock -Content $existing
+$managedBlock = @(
+  ''
+  $MarkerBegin
+  ('# Applied {0} from devbox' -f (Get-Date -Format 'yyyy-MM-dd HH:mm'))
+) + @($devLines) + @(
+  $MarkerEnd
+  ''
+)
+$newLines = $kept + $managedBlock
+$newContent = ($newLines -join "`r`n").TrimEnd() + "`r`n"
 
 if ($DryRun) {
   Write-Host "`n--- Would write to $WinHosts ---"
