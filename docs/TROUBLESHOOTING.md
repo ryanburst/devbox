@@ -164,6 +164,17 @@ A Windows dialog or browser tab should open for SSO.
 
 Clone once from **Windows** (PowerShell in a folder on `C:\`), or use SSH keys in WSL — devbox standard path is HTTPS + GCM.
 
+## Local hostname works in WSL but not in Windows browser
+
+`just setup` updated `/etc/hosts` in **WSL only**. Edge/Chrome on Windows use the **Windows** hosts file.
+
+```bash
+grep '\.local' /etc/hosts
+devbox setup hosts
+```
+
+See [HOSTS-WINDOWS.md](HOSTS-WINDOWS.md). Use `http://name.local:PORT` — the port is not part of the hosts file.
+
 ## Docker
 
 See [DOCKER.md](DOCKER.md) for Docker Desktop + WSL integration.

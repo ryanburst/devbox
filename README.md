@@ -79,6 +79,7 @@ If you only need to fix TLS or Docker first:
 ```bash
 devbox setup tls
 devbox setup docker   # after Docker Desktop is installed on Windows
+devbox setup hosts    # after repo just setup — sync .local names for Windows browser
 ```
 
 ### 5. Verify
@@ -244,6 +245,7 @@ WSL2     →  Node, pnpm, just, docker compose, all installs and repo scripts
 | [ONBOARDING.md](docs/ONBOARDING.md) | Full checklist |
 | [RESET.md](docs/RESET.md) | Undo install and start over |
 | [DOCKER.md](docs/DOCKER.md) | Docker Desktop + WSL |
+| [HOSTS-WINDOWS.md](docs/HOSTS-WINDOWS.md) | `.local` URLs in Windows browser |
 | [CORPORATE-TLS.md](docs/CORPORATE-TLS.md) | Zscaler / manual CA |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Support |
 | [SECURITY.md](docs/SECURITY.md) | Security review |
