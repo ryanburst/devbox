@@ -26,25 +26,28 @@ Run **`devbox setup hosts` from WSL** (normal Ubuntu terminal). Devbox prepares:
 
 ### Corporate elevation (no domain-admin password)
 
-Many companies block classic **Run as administrator** (domain admin + password) but allow **Run with elevated access** (business justification).
+Many companies block **Run as administrator** (domain password) but allow **Run with elevated access** on **PowerShell** — often **not** on `.cmd` or `.ps1` files in Explorer.
+
+**Recommended workflow:**
 
 1. In WSL: `devbox setup hosts`
-2. On Windows: **Win+R** → `%LOCALAPPDATA%\devbox`
-3. Right-click **`apply-dev-hosts.cmd`** → **Run with elevated access**  
-   (use `.cmd` so the window stays open; `.ps1` alone may flash and close on error)
-
-   Or open PowerShell via your company’s elevated-access menu, then:
+2. On Windows: **Start** → search **PowerShell**
+3. Right-click **Windows PowerShell** → **Run with elevated access** (company menu)
+4. In that window, paste:
 
 ```powershell
 cd $env:LOCALAPPDATA\devbox
-.\apply-dev-hosts.cmd
+powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1
 ```
 
-If a window disappears immediately, open **`apply-dev-hosts.log`** in the same folder for the error (often “not elevated”).
+5. Wait for **Success**, press Enter to close
+6. Optional: `ipconfig /flushdns`
 
-4. `ipconfig /flushdns`
+**Win+R** → `%LOCALAPPDATA%\devbox` opens the folder; read **`START-HERE-hosts.txt`** there.
 
-Do **not** rely on the automatic UAC popup from devbox unless you set `DEVBOX_HOSTS_USE_RUNAS=1` (personal machines only).
+If a window flashes and closes, open **`apply-dev-hosts.log`** (often “not elevated” — you must start from step 2–3, not double-click a file).
+
+Do **not** rely on devbox’s automatic UAC popup unless `DEVBOX_HOSTS_USE_RUNAS=1` (personal machines).
 
 Elevated PowerShell often **cannot** run `wsl` — always start from WSL for `devbox setup hosts`, then finish on Windows as above.
 

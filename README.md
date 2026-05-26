@@ -79,7 +79,7 @@ If you only need to fix TLS or Docker first:
 ```bash
 devbox setup tls
 devbox setup docker   # after Docker Desktop is installed on Windows
-devbox setup hosts    # after repo just setup — sync .local names for Windows browser
+devbox setup hosts    # then elevated Windows PowerShell — see docs/HOSTS-WINDOWS.md
 ```
 
 ### 5. Verify

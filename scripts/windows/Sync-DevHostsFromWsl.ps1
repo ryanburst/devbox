@@ -25,25 +25,24 @@ function Test-Admin {
 function Write-CorporateElevationInstructions {
   param([string]$DevboxDir)
   Write-Host ''
-  Write-Host '=== Next step (Windows, corporate elevation) ===' -ForegroundColor Cyan
+  Write-Host '=== Next step (Windows) ===' -ForegroundColor Cyan
   Write-Host ''
   Write-Host "Files ready in: $DevboxDir"
+  Write-Host "Also read: $DevboxDir\START-HERE-hosts.txt"
   Write-Host ''
-  Write-Host 'Do NOT use "Run as administrator" (domain admin password).'
-  Write-Host 'Use your company elevation instead:'
+  Write-Host '.cmd / .ps1 right-click often has NO "Run with elevated access" on corporate PCs.'
+  Write-Host 'Use elevated PowerShell from the Start menu instead:'
   Write-Host ''
-  Write-Host '  Option A — Explorer (recommended: .cmd keeps the window open)'
-  Write-Host "    1. Win+R → paste: $DevboxDir"
-  Write-Host '    2. Right-click apply-dev-hosts.cmd'
-  Write-Host '    3. Choose "Run with elevated access" (or your company equivalent)'
-  Write-Host '    If the window closes instantly, open apply-dev-hosts.log in that folder.'
+  Write-Host '  1. Start → PowerShell → right-click → Run with elevated access'
+  Write-Host '     (company elevation — NOT domain "Run as administrator")'
   Write-Host ''
-  Write-Host '  Option B — Elevated PowerShell (via company menu)'
-  Write-Host "    cd `"$DevboxDir`""
-  Write-Host '    .\apply-dev-hosts.cmd'
-  Write-Host '    (or: powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1)'
+  Write-Host '  2. Paste:'
+  Write-Host "     cd `"$DevboxDir`""
+  Write-Host '     powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1'
   Write-Host ''
-  Write-Host '  Then: ipconfig /flushdns'
+  Write-Host '  3. ipconfig /flushdns   (optional, same window)'
+  Write-Host ''
+  Write-Host '  Log if needed: apply-dev-hosts.log'
   Write-Host ''
 }
 
@@ -58,14 +57,17 @@ function Install-DevboxHostsBundle {
   $applyDest = Join-Path $devboxDir $ApplyScriptName
   $launcherPs1 = Join-Path $devboxDir 'apply-dev-hosts.ps1'
   $launcherCmd = Join-Path $devboxDir 'apply-dev-hosts.cmd'
+  $readmeDest = Join-Path $devboxDir 'START-HERE-hosts.txt'
   $scriptDir = Split-Path -Parent $SourceApplyScript
   $launcherSource = Join-Path $scriptDir 'apply-dev-hosts.launcher.ps1'
   $cmdSource = Join-Path $scriptDir 'apply-dev-hosts.cmd'
+  $readmeSource = Join-Path $scriptDir 'START-HERE-hosts.txt'
 
   Copy-Item -LiteralPath $InputFile -Destination $linesDest -Force
   Copy-Item -LiteralPath $SourceApplyScript -Destination $applyDest -Force
   Copy-Item -LiteralPath $launcherSource -Destination $launcherPs1 -Force
   Copy-Item -LiteralPath $cmdSource -Destination $launcherCmd -Force
+  Copy-Item -LiteralPath $readmeSource -Destination $readmeDest -Force
 
   return $devboxDir
 }

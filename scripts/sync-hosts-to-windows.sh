@@ -73,7 +73,10 @@ log "preparing Windows hosts bundle (no domain-admin UAC)"
   -InputFile "$LINES_FILE_WIN" -PrepareOnly
 
 log ""
-log "On Windows: right-click apply-dev-hosts.cmd → Run with elevated access"
-log "If the window closes, read: %LOCALAPPDATA%\\devbox\\apply-dev-hosts.log"
+log "On Windows:"
+log "  Start → PowerShell → Run with elevated access"
+log "  cd \$env:LOCALAPPDATA\\devbox"
+log "  powershell -ExecutionPolicy Bypass -File .\\apply-dev-hosts.ps1"
+log "  (see START-HERE-hosts.txt in that folder — .cmd may lack elevation menu)"
 log "Folder: $(wslpath -w "$DEVBOX_WIN" 2>/dev/null || echo "%LOCALAPPDATA%\\devbox")"
 log "Optional after success: ipconfig /flushdns"
