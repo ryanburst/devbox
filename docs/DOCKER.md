@@ -22,7 +22,9 @@ devbox doctor
 docker run --rm hello-world
 ```
 
-`devbox setup docker` adds `~/.local/bin/docker` wrappers that call the Windows CLI when needed.
+`devbox setup docker` symlinks `~/.local/bin/docker` to Docker Desktop’s CLI at `/mnt/wsl/docker-desktop/cli-tools/` (only present when WSL integration is enabled).
+
+**Do not** rely on `docker.exe` from `C:\Program Files\Docker\...` — that prints *“could not be found in this WSL 2 distro”* until integration is on.
 
 ## Daily use
 
@@ -39,7 +41,9 @@ Run `docker` and `docker compose` in **WSL bash**, not PowerShell (unless you pr
 | Symptom | Fix |
 |--------|-----|
 | `docker: command not found` | `devbox setup docker` |
-| `Cannot connect to the Docker daemon` | Start Docker Desktop; enable WSL integration; `wsl --shutdown` |
+| *could not be found in this WSL 2 distro* | Enable WSL integration for **your** distro in Docker Desktop; `wsl --shutdown`; `devbox setup docker` (removes bad `docker.exe` wrappers) |
+| `Cannot connect to the Docker daemon` | Start Docker Desktop; disable Resource Saver / wake engine; enable WSL integration; `wsl --shutdown` |
+| `/usr/bin/docker` is a **directory** | `sudo rm -rf /usr/bin/docker` then `sudo ln -s /mnt/wsl/docker-desktop/cli-tools/usr/bin/docker /usr/bin/docker` |
 | `permission denied` on socket | Ensure integration is on for **this** distro (not only docker-desktop) |
 | Slow or weird behavior | Repo must be under `~/code`, not `/mnt/c/...` |
 | Two Docker installs | Remove WSL engine: `sudo apt remove docker.io containerd runc` |

@@ -171,7 +171,9 @@ See [DOCKER.md](DOCKER.md) for Docker Desktop + WSL integration.
 | Symptom | Fix |
 |--------|-----|
 | `docker: command not found` | `devbox setup docker` |
-| Cannot connect to daemon | Start Docker Desktop; WSL Integration → Ubuntu ON; `wsl --shutdown` |
+| *could not be found in this WSL 2 distro* | Docker Desktop → WSL Integration → enable **$WSL_DISTRO_NAME**; Apply; `wsl --shutdown`; `devbox setup docker` |
+| Cannot connect to daemon | Start Docker Desktop; wake from Resource Saver; WSL Integration ON; `wsl --shutdown` |
+| `/usr/bin/docker` is a directory | `sudo rm -rf /usr/bin/docker && sudo ln -s /mnt/wsl/docker-desktop/cli-tools/usr/bin/docker /usr/bin/docker` |
 | Conflicts / wrong daemon | `sudo apt remove docker.io containerd runc`; disable `sudo systemctl disable --now docker` |
 
 devbox does not run your app in Docker. Use `docker compose` for services (Postgres, Redis). App commands stay `pnpm dev` in WSL.

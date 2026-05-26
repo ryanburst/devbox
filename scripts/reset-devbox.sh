@@ -110,10 +110,20 @@ remove_toolchain() {
   fi
 
   for wrapper in docker docker-compose; do
-    if [[ -f "$HOME/.local/bin/$wrapper" ]] \
-      && grep -q 'devbox' "$HOME/.local/bin/$wrapper" 2>/dev/null; then
-      rm -f "$HOME/.local/bin/$wrapper"
-      log "removed ~/.local/bin/$wrapper"
+    if [[ -L "$HOME/.local/bin/$wrapper" || -f "$HOME/.local/bin/$wrapper" ]]; then
+      case "$wrapper" in
+        docker | docker-compose)
+          if [[ -L "$HOME/.local/bin/$wrapper" ]] \
+            && readlink "$HOME/.local/bin/$wrapper" 2>/dev/null | grep -q 'docker-desktop'; then
+            rm -f "$HOME/.local/bin/$wrapper"
+            log "removed ~/.local/bin/$wrapper"
+          elif [[ -f "$HOME/.local/bin/$wrapper" ]] \
+            && grep -q 'docker.exe' "$HOME/.local/bin/$wrapper" 2>/dev/null; then
+            rm -f "$HOME/.local/bin/$wrapper"
+            log "removed ~/.local/bin/$wrapper (windows exe wrapper)"
+          fi
+          ;;
+      esac
     fi
   done
 

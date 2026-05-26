@@ -391,10 +391,13 @@ cmd_setup_git() {
 
 cmd_setup_docker() {
   if devbox_configure_docker; then
-    echo "Docker CLI in WSL uses Docker Desktop on Windows."
+    echo "Docker CLI in WSL uses Docker Desktop (WSL integration)."
     echo "Test: docker run --rm hello-world"
     echo "In your repo: docker compose up -d"
   else
+    echo ""
+    echo "If integration is already ON, toggle it off and on for $(devbox_wsl_distro_name 2>/dev/null || echo 'your distro'),"
+    echo "Apply & Restart, then: wsl --shutdown  (PowerShell)  and re-open Ubuntu."
     die "docker not ready — see docs/DOCKER.md"
   fi
 }
