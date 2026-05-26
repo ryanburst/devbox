@@ -32,14 +32,16 @@ function Write-CorporateElevationInstructions {
   Write-Host 'Do NOT use "Run as administrator" (domain admin password).'
   Write-Host 'Use your company elevation instead:'
   Write-Host ''
-  Write-Host '  Option A — Explorer'
+  Write-Host '  Option A — Explorer (recommended: .cmd keeps the window open)'
   Write-Host "    1. Win+R → paste: $DevboxDir"
-  Write-Host '    2. Right-click apply-dev-hosts.ps1'
+  Write-Host '    2. Right-click apply-dev-hosts.cmd'
   Write-Host '    3. Choose "Run with elevated access" (or your company equivalent)'
+  Write-Host '    If the window closes instantly, open apply-dev-hosts.log in that folder.'
   Write-Host ''
   Write-Host '  Option B — Elevated PowerShell (via company menu)'
   Write-Host "    cd `"$DevboxDir`""
-  Write-Host '    powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1'
+  Write-Host '    .\apply-dev-hosts.cmd'
+  Write-Host '    (or: powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1)'
   Write-Host ''
   Write-Host '  Then: ipconfig /flushdns'
   Write-Host ''
@@ -54,20 +56,16 @@ function Install-DevboxHostsBundle {
   $null = New-Item -ItemType Directory -Path $devboxDir -Force
   $linesDest = Join-Path $devboxDir 'hosts-lines.txt'
   $applyDest = Join-Path $devboxDir $ApplyScriptName
-  $launcher = Join-Path $devboxDir 'apply-dev-hosts.ps1'
+  $launcherPs1 = Join-Path $devboxDir 'apply-dev-hosts.ps1'
+  $launcherCmd = Join-Path $devboxDir 'apply-dev-hosts.cmd'
+  $scriptDir = Split-Path -Parent $SourceApplyScript
+  $launcherSource = Join-Path $scriptDir 'apply-dev-hosts.launcher.ps1'
+  $cmdSource = Join-Path $scriptDir 'apply-dev-hosts.cmd'
 
   Copy-Item -LiteralPath $InputFile -Destination $linesDest -Force
   Copy-Item -LiteralPath $SourceApplyScript -Destination $applyDest -Force
-
-  @"
-# devbox — run this file with your company's "Run with elevated access"
-`$ErrorActionPreference = 'Stop'
-`$here = Split-Path -Parent `$MyInvocation.MyCommand.Path
-& "`$here\$ApplyScriptName" -InputFile "`$here\hosts-lines.txt"
-if (`$LASTEXITCODE -ne 0) { exit `$LASTEXITCODE }
-Write-Host ''
-Write-Host 'Success. You can close this window.' -ForegroundColor Green
-"@ | Set-Content -Path $launcher -Encoding UTF8
+  Copy-Item -LiteralPath $launcherSource -Destination $launcherPs1 -Force
+  Copy-Item -LiteralPath $cmdSource -Destination $launcherCmd -Force
 
   return $devboxDir
 }
@@ -99,7 +97,7 @@ if ($env:DEVBOX_HOSTS_USE_RUNAS -eq '1') {
   Write-Host ''
   Write-Host 'DEVBOX_HOSTS_USE_RUNAS=1 — opening classic UAC elevation...' -ForegroundColor Yellow
   $argList = @(
-    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $devboxDir 'apply-dev-hosts.ps1')
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $devboxDir 'apply-dev-hosts.cmd')
   )
   Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $argList
   exit 0

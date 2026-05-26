@@ -60,8 +60,10 @@ if (-not (Test-Admin)) {
   Write-Host '  2. cd $env:LOCALAPPDATA\devbox'
   Write-Host '  3. powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1'
   Write-Host ''
-  Write-Host 'Or right-click apply-dev-hosts.ps1 in that folder → Run with elevated access'
+  Write-Host 'Or right-click apply-dev-hosts.cmd → Run with elevated access'
+  Write-Host 'If a window flashes and closes, read apply-dev-hosts.log in that folder.'
   Write-Host ''
+  Read-Host 'Press Enter to close'
   exit 1
 }
 

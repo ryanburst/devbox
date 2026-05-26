@@ -30,13 +30,17 @@ Many companies block classic **Run as administrator** (domain admin + password) 
 
 1. In WSL: `devbox setup hosts`
 2. On Windows: **Win+R** → `%LOCALAPPDATA%\devbox`
-3. Right-click **`apply-dev-hosts.ps1`** → **Run with elevated access**  
-   (or open PowerShell via your company’s elevated-access menu, then:)
+3. Right-click **`apply-dev-hosts.cmd`** → **Run with elevated access**  
+   (use `.cmd` so the window stays open; `.ps1` alone may flash and close on error)
+
+   Or open PowerShell via your company’s elevated-access menu, then:
 
 ```powershell
 cd $env:LOCALAPPDATA\devbox
-powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1
+.\apply-dev-hosts.cmd
 ```
+
+If a window disappears immediately, open **`apply-dev-hosts.log`** in the same folder for the error (often “not elevated”).
 
 4. `ipconfig /flushdns`
 
