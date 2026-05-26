@@ -11,7 +11,7 @@ One-time setup for corporate Windows laptops: prepare WSL2, then develop any tea
 - Windows 11 with permission to install WSL (first time only)
 - [Git for Windows](https://git-scm.com/download/win) with **Git Credential Manager** (HTTPS clone + browser SSO)
 - [Zscaler Client Connector](https://www.zscaler.com/) installed and connected (if your company uses Zscaler / TLS inspection)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — optional; only for local services (`docker compose`)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — required if your repos use `docker compose` (WSL integration; see [docs/DOCKER.md](docs/DOCKER.md))
 - VS Code or Cursor — optional
 
 ### WSL2 (after install)
@@ -70,13 +70,15 @@ The interactive wizard will:
 
 1. Check HTTPS and configure **corporate TLS / Zscaler** if needed
 2. Install **Node.js 22** (fnm), **pnpm**, **just**, and **turbo** (pinned versions)
-3. Optionally add **fnm** to `~/.bashrc`
-4. Run **`devbox doctor`**
+3. Wire **Docker Desktop** for WSL (`docker` / `docker compose`)
+4. Optionally add **fnm** to `~/.bashrc`
+5. Run **`devbox doctor`**
 
-If you only need to fix TLS first:
+If you only need to fix TLS or Docker first:
 
 ```bash
 devbox setup tls
+devbox setup docker   # after Docker Desktop is installed on Windows
 ```
 
 ### 5. Verify
@@ -176,14 +178,21 @@ Per-repo files (optional): `.devbox/profile.env`, `.devbox/hooks.sh` (hooks requ
 
 ---
 
-## Optional: Docker for local services
+## Docker (Docker Desktop + WSL)
+
+Install and enable WSL integration on **Windows**, then in WSL:
+
+```bash
+devbox setup docker
+```
 
 ```bash
 cd ~/code/your-app
 docker compose up -d
+pnpm dev
 ```
 
-Run the app with `pnpm dev` in WSL, not on `C:\`.
+Details: [docs/DOCKER.md](docs/DOCKER.md). Run the app with `pnpm dev` in WSL, not on `C:\`.
 
 ---
 
@@ -211,7 +220,7 @@ After setup, a normal day is `wsl` → `cd ~/code/my-app` → `pnpm dev`. No dev
 
 ```text
 Windows  →  Git + GCM, Docker Desktop, VS Code, Zscaler (launcher only)
-WSL2     →  Node, pnpm, turbo, all installs and repo scripts
+WSL2     →  Node, pnpm, just, docker compose, all installs and repo scripts
 ~/code   →  all team repository clones
 ```
 
@@ -234,6 +243,7 @@ WSL2     →  Node, pnpm, turbo, all installs and repo scripts
 |-----|----------|
 | [ONBOARDING.md](docs/ONBOARDING.md) | Full checklist |
 | [RESET.md](docs/RESET.md) | Undo install and start over |
+| [DOCKER.md](docs/DOCKER.md) | Docker Desktop + WSL |
 | [CORPORATE-TLS.md](docs/CORPORATE-TLS.md) | Zscaler / manual CA |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Support |
 | [SECURITY.md](docs/SECURITY.md) | Security review |

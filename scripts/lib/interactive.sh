@@ -181,7 +181,18 @@ devbox_setup_wizard() {
     DEVBOX_PATCH_SHELL=1 bash "$DEVBOX_ROOT/scripts/install-toolchain.sh"
   fi
 
-  printf '\n── Step 4: Health check ──\n'
+  printf '\n── Step 4: Docker Desktop (WSL) ──\n'
+  if devbox_docker_working && devbox_docker_compose_working; then
+    printf '  docker: ok (Docker Desktop)\n'
+  else
+    if devbox_prompt_yn "Configure docker for Docker Desktop on Windows?" y; then
+      devbox_configure_docker || warn "docker not ready — see docs/DOCKER.md"
+    else
+      warn "skipped docker — repos using docker compose will need: devbox setup docker"
+    fi
+  fi
+
+  printf '\n── Step 5: Health check ──\n'
   cmd_doctor
 
   printf '\nSetup complete. Clone any team repo:\n'
@@ -195,21 +206,23 @@ devbox_interactive_menu() {
     "  1) Setup wizard (new machine)
   2) Corporate TLS / Zscaler
   3) Install toolchain only
-  4) doctor
-  5) list repos in ~/code
-  6) Reset devbox install
-  7) help
-  8) Exit")"
+  4) Docker Desktop (WSL)
+  5) doctor
+  6) list repos in ~/code
+  7) Reset devbox install
+  8) help
+  9) Exit")"
 
   case "$choice" in
     1) devbox_setup_wizard ;;
     2) devbox_setup_tls_interactive ;;
     3) bash "$DEVBOX_ROOT/scripts/install-toolchain.sh" ;;
-    4) cmd_doctor ;;
-    5) cmd_list ;;
-    6) bash "$DEVBOX_ROOT/scripts/reset-devbox.sh" ;;
-    7) usage ;;
-    8 | q) exit 0 ;;
+    4) devbox_configure_docker || true ;;
+    5) cmd_doctor ;;
+    6) cmd_list ;;
+    7) bash "$DEVBOX_ROOT/scripts/reset-devbox.sh" ;;
+    8) usage ;;
+    9 | q) exit 0 ;;
     *) die "invalid choice: $choice" ;;
   esac
 }

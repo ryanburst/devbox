@@ -6,7 +6,7 @@ Checklist to go from a corporate Windows laptop to working on any team repo. **C
 
 - [ ] Windows 11 with admin rights to install WSL (first time only)
 - [ ] Git for Windows + Git Credential Manager
-- [ ] Docker Desktop (optional — only if your team uses `docker compose` for local services)
+- [ ] Docker Desktop on Windows with **WSL Integration** enabled for Ubuntu (if repos use `docker compose`)
 - [ ] VS Code or Cursor (optional)
 - [ ] Zscaler Client Connector connected (if your company uses Zscaler)
 
@@ -56,7 +56,8 @@ The wizard will:
 1. Test HTTPS and configure **corporate TLS / Zscaler** if needed
 2. Install the **toolchain** (apt packages, fnm, Node, pnpm, just, turbo)
 3. Optionally add **fnm** to `~/.bashrc`
-4. Run **`devbox doctor`**
+4. Configure **Docker** (`devbox setup docker` — after Docker Desktop is running on Windows)
+5. Run **`devbox doctor`**
 
 TLS only:
 

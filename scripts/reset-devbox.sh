@@ -109,6 +109,14 @@ remove_toolchain() {
     log "removed ~/.local/bin/just"
   fi
 
+  for wrapper in docker docker-compose; do
+    if [[ -f "$HOME/.local/bin/$wrapper" ]] \
+      && grep -q 'devbox' "$HOME/.local/bin/$wrapper" 2>/dev/null; then
+      rm -f "$HOME/.local/bin/$wrapper"
+      log "removed ~/.local/bin/$wrapper"
+    fi
+  done
+
   if [[ -d "$HOME/.pnpm-store" ]]; then
     if prompt_confirm "Remove pnpm store at ~/.pnpm-store?"; then
       rm -rf "$HOME/.pnpm-store"

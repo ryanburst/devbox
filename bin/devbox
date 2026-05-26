@@ -61,6 +61,7 @@ Usage:
   devbox setup               Guided wizard (TLS, toolchain, shell)
   devbox setup tls           Corporate CA / Zscaler only
   devbox setup git           Use Windows Git Credential Manager from WSL (HTTPS SSO)
+  devbox setup docker        Docker Desktop CLI from WSL (docker compose)
   devbox setup -y            Wizard with defaults (non-interactive)
   devbox tls                 Alias for: devbox setup tls
   devbox reset [--full] [-y] Undo install.sh / setup (see devbox reset --help)
@@ -265,13 +266,21 @@ cmd_doctor() {
     echo "  workspace: missing — mkdir -p $CODE_DIR"
   fi
   if grep -qi microsoft /proc/version 2>/dev/null; then
-    local gcm_status
+    local gcm_status docker_status
     gcm_status="$(devbox_git_gcm_status 2>/dev/null || true)"
     if [[ "$gcm_status" == "ok" ]]; then
       echo "  git credential (Windows GCM): ok"
     else
       echo "  git credential (Windows GCM): $gcm_status"
       echo "  fix: devbox setup git  (install Git for Windows with GCM first)"
+    fi
+    docker_status="$(devbox_docker_status 2>/dev/null || true)"
+    if [[ "$docker_status" == "ok" ]]; then
+      echo "  docker (Docker Desktop): ok"
+      echo "  docker compose: $(docker compose version 2>/dev/null | head -1)"
+    else
+      echo "  docker (Docker Desktop): $docker_status"
+      echo "  fix: devbox setup docker  (see docs/DOCKER.md)"
     fi
   fi
   devbox_load_env_local
@@ -380,6 +389,16 @@ cmd_setup_git() {
   fi
 }
 
+cmd_setup_docker() {
+  if devbox_configure_docker; then
+    echo "Docker CLI in WSL uses Docker Desktop on Windows."
+    echo "Test: docker run --rm hello-world"
+    echo "In your repo: docker compose up -d"
+  else
+    die "docker not ready — see docs/DOCKER.md"
+  fi
+}
+
 cmd_setup() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -395,12 +414,16 @@ cmd_setup() {
         cmd_setup_git
         return 0
         ;;
+      docker)
+        cmd_setup_docker
+        return 0
+        ;;
       -h | --help)
-        echo "usage: devbox setup [-y] [tls|git]"
+        echo "usage: devbox setup [-y] [tls|git|docker]"
         return 0
         ;;
       *)
-        die "unknown setup option: $1 (try: devbox setup tls | devbox setup git)"
+        die "unknown setup option: $1 (try: devbox setup tls | devbox setup git | devbox setup docker)"
         ;;
     esac
   done
@@ -411,6 +434,8 @@ cmd_setup() {
 source "$DEVBOX_ROOT/scripts/lib/corporate-ca.sh"
 # shellcheck source=../scripts/lib/git-gcm.sh
 source "$DEVBOX_ROOT/scripts/lib/git-gcm.sh"
+# shellcheck source=../scripts/lib/docker-desktop.sh
+source "$DEVBOX_ROOT/scripts/lib/docker-desktop.sh"
 # shellcheck source=../scripts/lib/interactive.sh
 source "$DEVBOX_ROOT/scripts/lib/interactive.sh"
 

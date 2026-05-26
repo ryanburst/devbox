@@ -7,6 +7,8 @@ DEVBOX_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$DEVBOX_ROOT/config/versions.sh"
 # shellcheck source=lib/corporate-ca.sh
 source "$DEVBOX_ROOT/scripts/lib/corporate-ca.sh"
+# shellcheck source=lib/docker-desktop.sh
+source "$DEVBOX_ROOT/scripts/lib/docker-desktop.sh"
 
 NODE_VERSION="${DEVBOX_NODE_VERSION:-$NODE_VERSION_DEFAULT}"
 PNPM_STORE="${DEVBOX_PNPM_STORE:-$HOME/.pnpm-store}"
@@ -277,6 +279,11 @@ main() {
   install_pnpm_and_turbo
   install_just
   configure_pnpm
+  if devbox_configure_docker; then
+    log "docker ready (Docker Desktop via WSL)"
+  else
+    warn "docker not ready — install/start Docker Desktop, enable WSL integration, then: devbox setup docker"
+  fi
   ensure_workspace
   patch_shell_rc_full
   patch_shell_rc_toolchain

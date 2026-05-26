@@ -166,7 +166,15 @@ Clone once from **Windows** (PowerShell in a folder on `C:\`), or use SSH keys i
 
 ## Docker
 
-devbox does not run your app in Docker. Use `docker compose` only for services (Postgres, Redis). App commands stay `pnpm dev` in WSL.
+See [DOCKER.md](DOCKER.md) for Docker Desktop + WSL integration.
+
+| Symptom | Fix |
+|--------|-----|
+| `docker: command not found` | `devbox setup docker` |
+| Cannot connect to daemon | Start Docker Desktop; WSL Integration → Ubuntu ON; `wsl --shutdown` |
+| Conflicts / wrong daemon | `sudo apt remove docker.io containerd runc`; disable `sudo systemctl disable --now docker` |
+
+devbox does not run your app in Docker. Use `docker compose` for services (Postgres, Redis). App commands stay `pnpm dev` in WSL.
 
 ## Re-run bootstrap
 
