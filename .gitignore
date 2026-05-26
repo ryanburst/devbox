@@ -1,7 +1,3 @@
-# Local conversation context (not for the repo)
-agent-chat.txt
-agent-chat-context.md
-
 config/env.local
 config/zscaler-root.cer
 config/zscaler-root.bundle.cer
