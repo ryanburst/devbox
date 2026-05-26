@@ -20,7 +20,29 @@ grep -E '\.local|127\.0\.0\.1' /etc/hosts | grep -v '127.0.0.1\s*localhost'
 devbox setup hosts
 ```
 
-Run **`devbox setup hosts` from WSL** (normal Ubuntu terminal), not from an elevated PowerShell window. Devbox reads `/etc/hosts` in WSL, writes a temp file on `C:\`, then opens **elevated** PowerShell that only edits the Windows hosts file — elevated PowerShell often **cannot** run `wsl`, so opening Admin PowerShell yourself and running `wsl` will fail.
+Run **`devbox setup hosts` from WSL** (normal Ubuntu terminal). Devbox prepares:
+
+`%LOCALAPPDATA%\devbox\apply-dev-hosts.ps1`
+
+### Corporate elevation (no domain-admin password)
+
+Many companies block classic **Run as administrator** (domain admin + password) but allow **Run with elevated access** (business justification).
+
+1. In WSL: `devbox setup hosts`
+2. On Windows: **Win+R** → `%LOCALAPPDATA%\devbox`
+3. Right-click **`apply-dev-hosts.ps1`** → **Run with elevated access**  
+   (or open PowerShell via your company’s elevated-access menu, then:)
+
+```powershell
+cd $env:LOCALAPPDATA\devbox
+powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1
+```
+
+4. `ipconfig /flushdns`
+
+Do **not** rely on the automatic UAC popup from devbox unless you set `DEVBOX_HOSTS_USE_RUNAS=1` (personal machines only).
+
+Elevated PowerShell often **cannot** run `wsl` — always start from WSL for `devbox setup hosts`, then finish on Windows as above.
 
 Or:
 
