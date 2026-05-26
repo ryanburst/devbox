@@ -69,7 +69,7 @@ if (-not (Test-Admin)) {
 }
 
 if (-not (Test-Path -LiteralPath $InputFile)) {
-  throw "Input file not found: $InputFile`nRe-run from WSL: devbox setup hosts"
+  throw ('Input file not found: {0}. Re-run from WSL: devbox setup hosts' -f $InputFile)
 }
 
 $hostsText = Get-Content -LiteralPath $InputFile -Raw

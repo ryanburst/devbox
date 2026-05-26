@@ -72,32 +72,34 @@ function Write-CorporateElevationInstructions {
 function Write-StartHereFile {
   param([string]$DevboxDir)
   $readme = Join-Path $DevboxDir 'START-HERE-hosts.txt'
-  @"
-devbox — sync WSL hosts to Windows (browser .local URLs)
-========================================================
-
-Your bundle folder (use this exact path):
-
-  $DevboxDir
-
-Corporate PCs: do NOT use %LOCALAPPDATA% or `$env:LOCALAPPDATA
-(it may show as COMPANY_username_`$ instead of your real profile).
-
-STEP 1 — PowerShell → Run with elevated access (company menu)
-
-STEP 2 — Paste:
-
-  cd "$DevboxDir"
-  powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1
-
-STEP 3 — Press Enter when you see Success.
-
-STEP 4 — Optional: ipconfig /flushdns
-
-Log on failure: $DevboxDir\apply-dev-hosts.log
-
-Re-prepare from WSL: devbox setup hosts
-"@ | Set-Content -LiteralPath $readme -Encoding UTF8
+  # Do not use @" "@ with embedded quotes - breaks PowerShell parsing.
+  $logPath = Join-Path $DevboxDir 'apply-dev-hosts.log'
+  @(
+    'devbox - sync WSL hosts to Windows (browser .local URLs)'
+    '========================================================'
+    ''
+    'Your bundle folder (use this exact path):'
+    ''
+    "  $DevboxDir"
+    ''
+    'Corporate PCs: do NOT use LOCALAPPDATA (often wrong, e.g. COMPANY_username_$).'
+    'Use USERPROFILE\AppData\Local\devbox instead.'
+    ''
+    'STEP 1 - PowerShell - Run with elevated access (company menu)'
+    ''
+    'STEP 2 - Paste:'
+    ''
+    "  cd `"$DevboxDir`""
+    '  powershell -ExecutionPolicy Bypass -File .\apply-dev-hosts.ps1'
+    ''
+    'STEP 3 - Press Enter when you see Success.'
+    ''
+    'STEP 4 - Optional: ipconfig /flushdns'
+    ''
+    "Log on failure: $logPath"
+    ''
+    'Re-prepare from WSL: devbox setup hosts'
+  ) | Set-Content -LiteralPath $readme -Encoding UTF8
 }
 
 function Install-DevboxHostsBundle {

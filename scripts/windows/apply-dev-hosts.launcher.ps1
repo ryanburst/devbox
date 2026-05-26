@@ -12,17 +12,17 @@ function Wait-ForUser {
 
 try {
   Start-Transcript -LiteralPath $logFile -Force | Out-Null
-  Write-Host "devbox hosts sync — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+  Write-Host "devbox hosts sync - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
   Write-Host "Log file: $logFile"
   Write-Host ''
 
   $apply = Join-Path $here 'Apply-DevHostsElevated.ps1'
   $lines = Join-Path $here 'hosts-lines.txt'
   if (-not (Test-Path -LiteralPath $apply)) {
-    throw "Missing $apply — re-run from WSL: devbox setup hosts"
+    throw "Missing $apply - re-run from WSL: devbox setup hosts"
   }
   if (-not (Test-Path -LiteralPath $lines)) {
-    throw "Missing $lines — re-run from WSL: devbox setup hosts"
+    throw "Missing $lines - re-run from WSL: devbox setup hosts"
   }
 
   & $apply -InputFile $lines
