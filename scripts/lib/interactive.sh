@@ -31,6 +31,26 @@ devbox_prompt_yn() {
   done
 }
 
+devbox_prompt_read() {
+  local prompt="$1" default="${2:-}" reply
+  if [[ "$DEVBOX_SETUP_NONINTERACTIVE" == "1" ]]; then
+    printf '%s' "$default"
+    return 0
+  fi
+  if ! devbox_is_tty; then
+    printf '%s' "$default"
+    return 0
+  fi
+  if [[ -n "$default" ]]; then
+    printf '%s [%s]: ' "$prompt" "$default"
+  else
+    printf '%s: ' "$prompt"
+  fi
+  read -r reply </dev/tty || return 1
+  reply="${reply:-$default}"
+  printf '%s' "$reply"
+}
+
 devbox_prompt_choice() {
   local reply
   if ! devbox_is_tty; then
@@ -192,11 +212,14 @@ devbox_setup_wizard() {
     fi
   fi
 
-  printf '\n── Step 5: Health check ──\n'
+  printf '\n── Step 5: Git (identity + HTTPS auth) ──\n'
+  devbox_setup_git_interactive
+
+  printf '\n── Step 6: Health check ──\n'
   cmd_doctor
 
   printf '\nSetup complete. Clone any team repo:\n'
-  printf '  cd ~/code && git clone <url> && cd <repo> && pnpm install\n'
+  printf '  cd ~/code && git clone <https-url> && cd <repo> && pnpm install\n'
 }
 
 devbox_interactive_menu() {

@@ -9,7 +9,7 @@ One-time setup for corporate Windows laptops: prepare WSL2, then develop any tea
 ### Windows (host)
 
 - Windows 11 with permission to install WSL (first time only)
-- [Git for Windows](https://git-scm.com/download/win) with **Git Credential Manager** (HTTPS clone + browser SSO)
+- [Git for Windows](https://git-scm.com/download/win) with **Git Credential Manager (GCM)** enabled — required for HTTPS clone and browser/Windows SSO on enterprise Git ([how to enable GCM](docs/GIT-AUTH.md#one-time-windows--enable-gcm))
 - [Zscaler Client Connector](https://www.zscaler.com/) installed and connected (if your company uses Zscaler / TLS inspection)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) — required if your repos use `docker compose` (WSL integration; see [docs/DOCKER.md](docs/DOCKER.md))
 - VS Code or Cursor — optional
@@ -69,7 +69,7 @@ devbox setup
 The interactive wizard will:
 
 1. Check HTTPS and configure **corporate TLS / Zscaler** if needed
-2. Install **Node.js 22** (fnm), **pnpm**, **just**, and **turbo** (pinned versions)
+2. Install **Node.js 24.4.0** (fnm), **pnpm**, **just**, and **turbo** (pinned versions)
 3. Wire **Docker Desktop** for WSL (`docker` / `docker compose`)
 4. Optionally add **fnm** to `~/.bashrc`
 5. Run **`devbox doctor`**
@@ -94,10 +94,10 @@ curl -fsSL https://nodejs.org/dist/index.json | head -c 80 && echo " TLS OK"
 
 ### 6. Clone your first team repo
 
-If `git clone https://...` does not open browser SSO from WSL, wire Git to **Windows Git Credential Manager**:
+Wire WSL `git` to **Windows Git Credential Manager** (after GCM is enabled on Windows — see [docs/GIT-AUTH.md](docs/GIT-AUTH.md)):
 
 ```bash
-devbox setup git   # once; requires Git for Windows installed on the host
+devbox setup git   # once; requires Git for Windows + GCM on the host
 ```
 
 devbox is **not** required inside the repo.
@@ -213,7 +213,7 @@ After setup, a normal day is `wsl` → `cd ~/code/my-app` → `pnpm dev`. No dev
 
 - **Policy:** Many corporate Windows images block npm lifecycle scripts; they run in WSL Linux.
 - **Speed:** `node_modules` on the WSL filesystem (`~/code`) is much faster than on `C:\` or `/mnt/c/...`.
-- **Git auth:** HTTPS via Git Credential Manager on Windows; clone into `~/code` from WSL.
+- **Git auth:** HTTPS via Git Credential Manager on Windows; `devbox setup git` in WSL; clone into `~/code` ([GIT-AUTH.md](docs/GIT-AUTH.md)).
 
 ---
 
@@ -247,6 +247,7 @@ WSL2     →  Node, pnpm, just, docker compose, all installs and repo scripts
 | [DOCKER.md](docs/DOCKER.md) | Docker Desktop + WSL |
 | [HOSTS-WINDOWS.md](docs/HOSTS-WINDOWS.md) | `.local` URLs in Windows browser |
 | [CORPORATE-TLS.md](docs/CORPORATE-TLS.md) | Zscaler / manual CA |
+| [GIT-AUTH.md](docs/GIT-AUTH.md) | Git Credential Manager + enterprise HTTPS clone |
 | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Support |
 | [SECURITY.md](docs/SECURITY.md) | Security review |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Design / platform |

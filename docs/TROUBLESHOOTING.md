@@ -143,20 +143,29 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ## Git clone auth fails / no browser SSO
 
-WSL ships its own `git`. It does **not** use Windows Git Credential Manager unless you wire it up. Symptom: `git clone https://...` hangs, fails with 401/403, or never opens a browser.
+WSL ships its own `git`. It does **not** use Windows Git Credential Manager (GCM) unless you enable GCM on Windows and run `devbox setup git` in WSL.
 
-### Fix (recommended)
+**Symptoms:** `git clone https://...` hangs, `401`/`403`, or no Windows browser / sign-in dialog.
 
-1. On **Windows**, install [Git for Windows](https://git-scm.com/download/win) and choose **Git Credential Manager** as the credential helper.
-2. In **WSL**:
+**Full guide:** [GIT-AUTH.md](GIT-AUTH.md) (install GCM on Windows, wire WSL, enterprise hosts, symptom table).
+
+### Quick fix
+
+1. **Windows** — enable GCM ([GIT-AUTH.md § Windows](GIT-AUTH.md#one-time-windows--enable-gcm)):
+   - Install [Git for Windows](https://git-scm.com/download/win) and select **Git Credential Manager**, **or**
+   - Apps → **Git** → **Modify** → select GCM, **or**
+   - `git config --global credential.helper manager` (or `manager-core` on older installs)
+   - Verify: `git config --global --get credential.helper` and `git-credential-manager.exe --version`
+2. **WSL:**
 
 ```bash
 cd ~/devbox && git pull
 devbox setup git
-git config --global --get credential.helper   # should point at .../git-credential-manager.exe
+devbox doctor
+git config --global --get credential.helper   # ~/.local/bin/git-credential-manager
 ```
 
-3. Clone from `~/code`:
+3. Clone from `~/code` with **HTTPS**:
 
 ```bash
 cd ~/code
@@ -167,7 +176,16 @@ A Windows dialog or browser tab should open for SSO.
 
 `devbox setup git` installs a wrapper at `~/.local/bin/git-credential-manager` so Git does not split `Program Files` paths (error: `/mnt/c/Program: not found`).
 
-### Verify GCM is reachable from WSL
+### Verify GCM
+
+**Windows (PowerShell):**
+
+```powershell
+git config --global --get credential.helper
+& "C:\Program Files\Git\mingw64\bin\git-credential-manager.exe" --version
+```
+
+**WSL:**
 
 ```bash
 "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe" --version
@@ -176,14 +194,19 @@ A Windows dialog or browser tab should open for SSO.
 
 ### Still no prompt?
 
-- **Stale credentials:** Windows → Credential Manager → remove entries for `git:https://...` or your host, then clone again.
-- **SSH URL:** GCM only works for **HTTPS** remotes (`https://...`), not `git@...`.
-- **GitHub Enterprise:** use the full `https://github.company.com/...` clone URL.
-- **Azure DevOps:** `devbox setup git` sets `credential.https://dev.azure.com.useHttpPath true`.
+| Cause | Fix |
+|-------|-----|
+| GCM not installed on Windows | Install/repair Git for Windows with GCM — [GIT-AUTH.md](GIT-AUTH.md) |
+| Skipped `devbox setup git` | Run `devbox setup git`; check `devbox doctor` |
+| Stale credentials | Windows → **Credential Manager** → remove `git:https://...` for your host |
+| SSH remote | Use `https://...` for GCM |
+| GitHub Enterprise | Full URL: `https://github.company.com/org/repo.git` |
+| Azure DevOps | `devbox setup git` sets `credential.https://dev.azure.com.useHttpPath true` |
+| TLS / Zscaler | [CORPORATE-TLS.md](CORPORATE-TLS.md), `devbox setup tls` |
 
 ### Workaround
 
-Clone once from **Windows** (PowerShell in a folder on `C:\`), or use SSH keys in WSL — devbox standard path is HTTPS + GCM.
+Clone once from **Windows** (PowerShell), or use SSH keys in WSL — devbox standard path is HTTPS + GCM ([GIT-AUTH.md](GIT-AUTH.md)).
 
 ## Local hostname works in WSL but not in Windows browser
 

@@ -32,6 +32,83 @@ EOF
   printf '%s' "$wrapper"
 }
 
+devbox_git_identity_status() {
+  local name email
+  if ! command -v git >/dev/null 2>&1; then
+    printf 'missing git'
+    return 1
+  fi
+  name="$(git config --global --get user.name 2>/dev/null || true)"
+  email="$(git config --global --get user.email 2>/dev/null || true)"
+  if [[ -n "$name" && -n "$email" ]]; then
+    printf 'ok (%s <%s>)' "$name" "$email"
+    return 0
+  fi
+  if [[ -n "$name" || -n "$email" ]]; then
+    printf 'incomplete (name=%s email=%s)' "${name:-<unset>}" "${email:-<unset>}"
+    return 1
+  fi
+  printf 'not configured'
+  return 1
+}
+
+devbox_configure_git_identity() {
+  local name email current_name current_email
+
+  if ! command -v git >/dev/null 2>&1; then
+    printf 'devbox: git not found — sudo apt install -y git\n' >&2
+    return 1
+  fi
+
+  current_name="$(git config --global --get user.name 2>/dev/null || true)"
+  current_email="$(git config --global --get user.email 2>/dev/null || true)"
+
+  if [[ "${DEVBOX_SETUP_NONINTERACTIVE:-0}" == "1" ]]; then
+    return 0
+  fi
+  if ! devbox_is_tty; then
+    return 0
+  fi
+
+  printf '\n── Git identity ──\n'
+  if [[ -n "$current_name" && -n "$current_email" ]]; then
+    printf '  Current: %s <%s>\n' "$current_name" "$current_email"
+    if ! devbox_prompt_yn "Update git user.name and user.email?" n; then
+      return 0
+    fi
+  fi
+
+  while true; do
+    name="$(devbox_prompt_read "Name" "$current_name")"
+    [[ -n "$name" ]] && break
+    printf '  Name is required.\n'
+  done
+  while true; do
+    email="$(devbox_prompt_read "Email" "$current_email")"
+    if [[ "$email" == *@*.* ]]; then
+      break
+    fi
+    printf '  Enter a valid email address.\n'
+  done
+
+  git config --global user.name "$name"
+  git config --global user.email "$email"
+  printf '  Set user.name=%s\n' "$name"
+  printf '  Set user.email=%s\n' "$email"
+  return 0
+}
+
+devbox_setup_git_interactive() {
+  devbox_configure_git_identity || warn "git identity not configured"
+  if devbox_configure_git_gcm; then
+    printf '  Git HTTPS: Windows GCM configured (browser SSO)\n'
+    return 0
+  fi
+  warn "Git GCM not configured — install Git for Windows with GCM, then: devbox setup git"
+  printf '  See docs/GIT-AUTH.md\n'
+  return 1
+}
+
 devbox_configure_git_gcm() {
   local gcm wrapper current
   if ! grep -qi microsoft /proc/version 2>/dev/null; then

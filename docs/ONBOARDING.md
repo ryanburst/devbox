@@ -5,7 +5,7 @@ Checklist to go from a corporate Windows laptop to working on any team repo. **C
 ## Prerequisites (Windows — usually pre-installed)
 
 - [ ] Windows 11 with admin rights to install WSL (first time only)
-- [ ] Git for Windows + Git Credential Manager
+- [ ] [Git for Windows](https://git-scm.com/download/win) with **Git Credential Manager (GCM)** enabled — see [GIT-AUTH.md](GIT-AUTH.md#one-time-windows--enable-gcm) (install, repair, or `git config --global credential.helper manager`)
 - [ ] Docker Desktop on Windows with **WSL Integration** enabled for Ubuntu (if repos use `docker compose`)
 - [ ] VS Code or Cursor (optional)
 - [ ] Zscaler Client Connector connected (if your company uses Zscaler)
@@ -67,7 +67,18 @@ devbox setup tls
 
 Manual fallback: [CORPORATE-TLS.md](CORPORATE-TLS.md).
 
+Git HTTPS (enterprise SSO) — after Git for Windows + GCM on Windows:
+
+```bash
+devbox setup git
+devbox doctor   # git credential (Windows GCM): ok
+```
+
+Details: [GIT-AUTH.md](GIT-AUTH.md).
+
 ## Phase 4 — First application repo (no devbox required)
+
+Clone with **HTTPS** (`https://...`), not SSH. Use `~/code` in WSL.
 
 ```bash
 cd ~/code
@@ -99,7 +110,9 @@ pnpm dev
 devbox list
 devbox repo your-app
 devbox doctor
-devbox                    # interactive menu
+devbox                    # help
+devbox doctor             # machine health check
+devbox menu               # interactive menu (optional)
 ```
 
 ## Common mistakes
@@ -111,10 +124,13 @@ devbox                    # interactive menu
 | Run `pnpm` in PowerShell | Use WSL bash only |
 | Run toolchain before TLS on Zscaler networks | Use `devbox setup` (TLS runs first) or `devbox setup tls` |
 | Expect devbox inside every repo | Only clone devbox once on the machine |
+| `git clone` in WSL with no browser SSO | Enable GCM on Windows, then `devbox setup git` — [GIT-AUTH.md](GIT-AUTH.md) |
+| `git@company.com:org/repo.git` | Use HTTPS for GCM, or configure SSH separately |
 
 ## Getting help
 
-- `devbox doctor` — toolchain, paths, HTTPS
+- `devbox doctor` — toolchain, paths, HTTPS, Git GCM
+- [GIT-AUTH.md](GIT-AUTH.md) — Windows GCM + WSL `devbox setup git`
 - [ARCHITECTURE.md](ARCHITECTURE.md) — design intent
 - [SECURITY.md](SECURITY.md) — security review summary
-- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — TLS, fnm, performance
+- [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — TLS, fnm, git auth, performance

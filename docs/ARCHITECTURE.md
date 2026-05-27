@@ -14,14 +14,14 @@ Application repos **do not need** devbox as a dependency. No `devbox` package in
 | `pnpm install` slow on `C:\` or `/mnt/c/...` | Clone repos under **`~/code`** on the WSL ext4 filesystem |
 | Inconsistent Node/pnpm across developers | Pinned versions in `config/versions.sh` + `install.sh` |
 | TLS inspection (e.g. Zscaler) breaks `curl` / fnm / npm | Install corporate root CA into **WSL** trust store before downloads |
-| SSH complexity on enterprise GitHub | HTTPS + Git Credential Manager on **Windows** |
+| SSH complexity on enterprise GitHub | HTTPS + Git Credential Manager on **Windows** ([GIT-AUTH.md](GIT-AUTH.md)) |
 
 ## Layers
 
 ```text
 ┌─────────────────────────────────────────────────────────┐
 │  Windows (thin host — launcher only)                     │
-│  • Git + Git Credential Manager (HTTPS clone)            │
+│  • Git + GCM (HTTPS / SSO — see GIT-AUTH.md)             │
 │  • Docker Desktop (optional service containers)          │
 │  • VS Code / Cursor (optional)                           │
 │  • Zscaler Client Connector (network / TLS inspection)   │

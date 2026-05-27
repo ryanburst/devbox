@@ -94,7 +94,8 @@ usage() {
 devbox — WSL2 machine bootstrap helper
 
 Usage:
-  devbox                     Interactive menu (TTY only)
+  devbox                     Show help (this message)
+  devbox menu                Interactive menu (TTY)
   devbox setup               Guided wizard (TLS, toolchain, shell)
   devbox setup tls           Corporate CA / Zscaler only
   devbox setup git           Use Windows Git Credential Manager from WSL (HTTPS SSO)
@@ -117,6 +118,8 @@ Profiles (optional):
 Per-repo hooks (opt-in only):
   ~/code/<repo>/.devbox/hooks.sh
   Run only with --trust-hooks or DEVBOX_TRUST_HOOKS=1
+
+Quick check: devbox doctor
 EOF
 }
 
@@ -305,12 +308,20 @@ cmd_doctor() {
   fi
   if grep -qi microsoft /proc/version 2>/dev/null; then
     local gcm_status docker_status
+    local git_id_status
+    git_id_status="$(devbox_git_identity_status 2>/dev/null || true)"
+    if [[ "$git_id_status" == ok* ]]; then
+      echo "  git identity: $git_id_status"
+    else
+      echo "  git identity: ${git_id_status:-not configured}"
+      echo "  fix: devbox setup git"
+    fi
     gcm_status="$(devbox_git_gcm_status 2>/dev/null || true)"
     if [[ "$gcm_status" == "ok" ]]; then
       echo "  git credential (Windows GCM): ok"
     else
       echo "  git credential (Windows GCM): $gcm_status"
-      echo "  fix: devbox setup git  (install Git for Windows with GCM first)"
+      echo "  fix: devbox setup git  (see docs/GIT-AUTH.md — enable GCM on Windows first)"
     fi
     docker_status="$(devbox_docker_status 2>/dev/null || true)"
     if [[ "$docker_status" == "ok" ]]; then
@@ -418,12 +429,13 @@ cmd_reset() {
 }
 
 cmd_setup_git() {
+  devbox_configure_git_identity || warn "git identity not configured — run again in a TTY to set name/email"
   if devbox_configure_git_gcm; then
     echo "Git HTTPS will use Windows Git Credential Manager (browser SSO)."
     echo "Test: cd ~/code && git clone https://github.com/<org>/<repo>.git"
-    echo "If no browser opens, clear stale creds in Windows Credential Manager and retry."
+    echo "If no browser opens, see docs/GIT-AUTH.md (Credential Manager, HTTPS URL)."
   else
-    die "could not configure Git GCM — install Git for Windows (GCM), then re-run"
+    die "could not configure Git GCM — see docs/GIT-AUTH.md (install Git for Windows with GCM)"
   fi
 }
 
@@ -492,16 +504,13 @@ main() {
   local cmd="${1-}"
 
   if [[ -z "$cmd" ]]; then
-    if devbox_is_tty; then
-      devbox_interactive_menu
-    else
-      usage
-    fi
+    usage
     return 0
   fi
 
   shift
   case "$cmd" in
+    menu) devbox_interactive_menu ;;
     setup) cmd_setup "$@" ;;
     reset) cmd_reset "$@" ;;
     tls) devbox_setup_tls_interactive ;;
